@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}邦琪药业 - 传承中药精华 服务大众健康{% endblock %}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- 顶部信息条 -->
+<div class="topbar d-none d-md-block">
+  <div class="container d-flex justify-content-between align-items-center">
+    <span class="topbar-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 传承中药精华 · 服务大众健康</span>
+    <span class="topbar-text">咨询热线：{{ COMPANY.phone }}</span>
+  </div>
+</div>
+
+<!-- 通用导航栏 -->
+<nav class="navbar navbar-expand-lg sticky-top site-nav">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+      <!-- LOGO 色块占位 -->
+      <span class="logo-block">邦</span>
+      <span class="brand-text">邦琪药业<small>BANGQI PHARMA</small></span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item"><a class="nav-link" href="/">主页</a></li>
+        <li class="nav-item"><a class="nav-link" href="/products">产品中心</a></li>
+        <li class="nav-item"><a class="nav-link" href="/news">邦资讯</a></li>
+        <li class="nav-item"><a class="nav-link" href="/about">公司介绍</a></li>
+        <li class="nav-item"><a class="nav-link" href="/research">研发生产</a></li>
+        <li class="nav-item"><a class="nav-link" href="/contact">联系我们</a></li>
+        <li class="nav-item ms-lg-3 nav-search-item dropdown">
+          <a class="btn nav-cta dropdown-toggle" href="#" id="navSearchToggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+            产品查询
+          </a>
+          <div class="dropdown-menu dropdown-menu-end search-dropdown" aria-labelledby="navSearchToggle">
+            <div class="search-box">
+              <div class="search-input-wrap">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="search" id="navSearchInput" class="form-control" placeholder="输入产品名称或功能主治关键字…" autocomplete="off" maxlength="40">
+                <button type="button" class="search-clear" id="navSearchClear" aria-label="清空" hidden>×</button>
+              </div>
+              <div class="search-results" id="navSearchResults" role="listbox" aria-label="产品搜索结果">
+                <div class="search-hint">输入产品名称或功能主治关键字</div>
+              </div>
+              <a href="/products" class="search-go-all">查看全部产品 →</a>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<!-- 通用 Footer：5 列 -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="row g-4 footer-cols">
+      <div class="col-6 col-lg-2">
+        <h6 class="footer-title">产品中心</h6>
+        <ul class="footer-links">
+          {% for f in DOSAGE_FORMS %}
+          <li><a href="/products?form={{ f }}">{{ f }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h6 class="footer-title">邦资讯</h6>
+        <ul class="footer-links">
+          {% for c in NEWS_CATEGORIES %}
+          <li><a href="/news?category={{ c }}">{{ c }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h6 class="footer-title">公司介绍</h6>
+        <ul class="footer-links">
+          <li><a href="/about/集团介绍">集团介绍</a></li>
+          <li><a href="/about/企业架构">企业架构</a></li>
+          <li><a href="/about/社会责任">社会责任</a></li>
+          <li><a href="/about/企业荣誉">企业荣誉</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h6 class="footer-title">研发中心</h6>
+        <ul class="footer-links">
+          <li><a href="/research/产品研发">产品研发</a></li>
+          <li><a href="/research/质量机构">质量机构</a></li>
+          <li><a href="/research/生产车间">生产车间</a></li>
+        </ul>
+      </div>
+      <div class="col-12 col-lg-4">
+        <h6 class="footer-title">公司信息</h6>
+        <p class="footer-info mb-1"><strong>地址：</strong>{{ COMPANY.address }}</p>
+        <p class="footer-info mb-3"><strong>电话：</strong>{{ COMPANY.phone }}　<strong>邮箱：</strong>{{ COMPANY.email }}</p>
+        <div class="d-flex align-items-center gap-3">
+          <!-- 二维码占位色块 -->
+          <span class="qr-block">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
+          </span>
+          <span class="qr-tip">扫码关注官方公众号<br><small>获取最新产品与健康资讯</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+      <span>© 2026 {{ COMPANY.full_name }}　桂ICP备00000000号</span>
+      <span>本站内容仅供参考，药品使用请遵医嘱或按说明书执行</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

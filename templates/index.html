@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}邦琪药业 - 传承中药精华 服务大众健康{% endblock %}
+
+{% block content %}
+
+<!-- ============ 1. Banner 轮播（数据库驱动，自动切换） ============ -->
+<div id="homeBanner" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4500">
+  <div class="carousel-indicators">
+    {% for b in banners %}
+    <button type="button" data-bs-target="#homeBanner" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first }}"></button>
+    {% endfor %}
+  </div>
+  <div class="carousel-inner">
+    {% for b in banners %}
+    <div class="carousel-item {{ 'active' if loop.first }}">
+      <!-- banner图片：未上传时显示纯色PNG占位图；无文字时仅展示图片、不渲染文字层与遮罩 -->
+      <div class="banner-ph {{ b.color }} d-flex align-items-center">
+        <img src="{{ img_url(b.image, 'banner', b.color) }}" alt="{{ b.title | striptags }}">
+        {% set has_text = b.kicker or b.title or b.subtitle or b.btn_text %}
+        {% if has_text %}
+        <div class="banner-shade"></div>
+        <div class="container banner-caption">
+          {% if b.kicker %}<span class="banner-kicker">{{ b.kicker }}</span>{% endif %}
+          {% if b.title %}<h2>{{ b.title | safe }}</h2>{% endif %}
+          {% if b.subtitle %}<p>{{ b.subtitle }}</p>{% endif %}
+          {% if b.btn_text %}<a href="{{ b.btn_link }}" class="btn btn-bq">{{ b.btn_text }}</a>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <button class="carousel-control-prev" type="button" data-bs-target="#homeBanner" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+  <button class="carousel-control-next" type="button" data-bs-target="#homeBanner" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+</div>
+
+<!-- ============ 2. 公司简介 ============ -->
+<section class="section">
+  <div class="container">
+    <div class="row g-5 align-items-center">
+      <div class="col-lg-6">
+        <!-- 厂区图片轮播占位色块（数据库驱动） -->
+        <div id="factoryShots" class="carousel slide carousel-fade factory-carousel" data-bs-ride="carousel" data-bs-interval="4000">
+          <div class="carousel-inner rounded-4 overflow-hidden shadow-bq">
+            {% for c in company_images %}
+            <div class="carousel-item {{ 'active' if loop.first }}"><div class="ph {{ c.color }} factory-ph"><img src="{{ img_url(c.image, 'factory', c.color) }}" alt="{{ c.title }}"></div></div>
+            {% endfor %}
+          </div>
+          <div class="carousel-indicators factory-indicators">
+            {% for c in company_images %}
+            <button type="button" data-bs-target="#factoryShots" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first }}"></button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="sec-kicker not-center">ABOUT US</div>
+        <h2 class="sec-title text-start">三十余载·只为放心好药</h2>
+        <p class="intro-text">{{ COMPANY.intro }}</p>
+        <!-- 三个数据圆环（数据库驱动，数字动态跳跃生成） -->
+        <div class="stat-row">
+          {% for s in home_stats %}
+          <div class="stat-circle">
+            <div class="stat-ring {{ 'ring-gold' if loop.index == 2 }}">
+              <span class="stat-num" data-target="{{ s.value }}">0</span><span class="stat-unit">{{ s.unit }}</span>
+            </div>
+            <span class="stat-label">{{ s.label }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. 产品中心：八大剂型 ============ -->
+<section class="section section-tint">
+  <div class="container">
+    <div class="sec-head">
+      <div class="sec-kicker">PRODUCTS</div>
+      <h2 class="sec-title">八大剂型 · 全谱系中药制造</h2>
+      <p class="sec-sub">精选八大核心剂型，覆盖滋补膏方与常用中成药</p>
+    </div>
+    <div class="row g-4">
+      {% set form_colors = ["ph-am","ph-gy","ph-gr","ph-ta","ph-cp","ph-li","ph-ti","ph-pi"] %}
+      {% for f in dosage_form_cards %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <a href="/products?form={{ f.name }}" class="form-card">
+          <!-- 剂型图片：未上传时显示纯色PNG占位图，悬停变虚并弹出剂型名称 -->
+          <div class="ph {{ form_colors[loop.index0 % 8] }} form-ph">
+            <img src="{{ img_url(f.image, 'form', form_colors[loop.index0 % 8]) }}" alt="{{ f.name }}">
+          </div>
+          <div class="form-overlay">
+            <span class="form-name">{{ f.name }}</span>
+            <span class="form-desc">{{ f.description }}</span>
+            <span class="form-go">进入剂型 →</span>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="/products" class="btn btn-outline-bq">查看全部产品</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. 新闻中心：焦点大图 + 要闻速览 ============ -->
+<section class="section" id="bangqiNews">
+  <div class="container">
+    <div class="sec-head">
+      <div class="sec-kicker">NEWS</div>
+      <h2 class="sec-title">邦琪资讯</h2>
+      <p class="sec-sub">聚焦企业发展动态与行业前沿资讯</p>
+    </div>
+
+    <div class="news-grid">
+      <!-- 左：焦点新闻（大图色块 + 渐变遮罩浮层） -->
+      <div class="news-feature">
+        {% set nf_colors = ["ph-green", "ph-ta", "ph-am", "ph-ti", "ph-li"] %}
+        {% for n in latest_news %}
+        <a href="/news/{{ n.id }}" class="nf-slide {{ 'on' if loop.first }}">
+          <div class="ph {{ nf_colors[loop.index0 % 5] }} nf-media">
+            <img src="{{ img_url(n.image, 'news-feature', nf_colors[loop.index0 % 5]) }}" alt="{{ n.title }}">
+          </div>
+          <div class="nf-overlay">
+            <span class="nf-cat">{{ n.category }}</span>
+            <h3 class="nf-title">{{ n.title }}</h3>
+            <p class="nf-excerpt">{{ n.content | truncate(60) }}</p>
+            <span class="nf-meta"><span>{{ n.date }} 发布</span><em>阅读全文 →</em></span>
+          </div>
+        </a>
+        {% endfor %}
+        <!-- 轮播进度条 -->
+        <div class="nf-progress"><span class="nf-progress-bar"></span></div>
+      </div>
+
+      <!-- 右：要闻速览（与左侧焦点联动） -->
+      <div class="news-side">
+        <div class="ns-head">
+          <span class="serif">要闻速览 · TOP 5</span>
+          <a href="/news" class="ns-more">全部资讯 →</a>
+        </div>
+        {% for n in latest_news %}
+        <a href="/news/{{ n.id }}" class="ns-item {{ 'on' if loop.first }}" data-idx="{{ loop.index0 }}">
+          <span class="ns-num serif">{{ "%02d" % loop.index }}</span>
+          <span class="ns-body">
+            <span class="ns-title">{{ n.title }}</span>
+            <span class="ns-meta">{{ n.category }} · {{ n.date }} · 阅读 {{ n.clicks }}</span>
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. 企业相关：上浮卡片（数据库驱动） ============ -->
+<section class="section section-tint">
+  <div class="container">
+    <div class="sec-head">
+      <div class="sec-kicker">CORPORATE</div>
+      <h2 class="sec-title">走近邦琪</h2>
+      <p class="sec-sub">组织架构 · 发展历程 · 品牌文化 · 科研开发</p>
+    </div>
+    <div class="row g-4">
+      {% for e in enterprise_cards %}
+      <div class="col-sm-6 col-lg-3">
+        <a href="{{ e.link }}" class="corp-card rise">
+          <div class="ph {{ e.color }} corp-ph"><img src="{{ img_url(e.image, 'corp', e.color) }}" alt="{{ e.title }}"></div>
+          <div class="corp-info"><h4>{{ e.title }}</h4><p>{{ e.description }}</p></div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ---- Banner ---- */
+.banner-ph { height: 560px; position: relative; overflow: hidden; }
+.banner-ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.banner-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,28,22,.78) 0%, rgba(8,28,22,.40) 55%, rgba(8,28,22,.55) 100%); }
+.banner-caption { position: relative; z-index: 2; color: #fff; max-width: 620px; padding: 0 1rem; }
+.banner-kicker { display: inline-block; font-size: .8rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .35rem 1.1rem; margin-bottom: 1.3rem; }
+.banner-caption h2 { font-size: clamp(2rem, 4.4vw, 3.2rem); font-weight: 900; line-height: 1.28; margin-bottom: 1rem; }
+.banner-caption p { color: rgba(255,255,255,.82); font-size: 1.02rem; margin-bottom: 1.8rem; }
+#homeBanner .carousel-control-prev, #homeBanner .carousel-control-next { width: 5%; }
+#homeBanner .carousel-indicators { margin-bottom: 1.4rem; }
+#homeBanner .carousel-indicators [data-bs-target] { width: 34px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
+#homeBanner .carousel-indicators .active { background: var(--bq-gold); }
+
+/* ---- 公司简介 ---- */
+.intro-text { color: #4a5852; line-height: 2; font-size: .95rem; text-align: justify; }
+.factory-ph { height: 380px; }
+.factory-indicators { margin-bottom: .8rem; }
+.factory-indicators [data-bs-target] { width: 26px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
+.factory-indicators .active { background: var(--bq-gold); }
+.shadow-bq { box-shadow: var(--bq-shadow-lg); }
+.sec-kicker.not-center::before { display: none; }
+
+.stat-row { display: flex; gap: 2.2rem; margin-top: 2.2rem; flex-wrap: wrap; }
+.stat-circle { text-align: center; }
+.stat-ring {
+  width: 118px; height: 118px; border-radius: 50%;
+  border: 4px solid var(--bq-green-2);
+  background: radial-gradient(circle at 30% 25%, rgba(30,107,83,.12), transparent 60%), #fff;
+  display: flex; align-items: baseline; justify-content: center;
+  padding-top: 34px; position: relative;
+  box-shadow: 0 8px 24px rgba(20,81,63,.14);
+  transition: transform .3s;
+}
+.stat-ring::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; border: 1px dashed var(--bq-green-soft); }
+.stat-ring.ring-gold { border-color: var(--bq-gold); background: radial-gradient(circle at 30% 25%, rgba(185,137,61,.14), transparent 60%), #fff; }
+.stat-circle:hover .stat-ring { transform: translateY(-6px); }
+.stat-num { font-family: "Noto Serif SC", serif; font-size: 2.1rem; font-weight: 900; color: var(--bq-green); line-height: 1; }
+.ring-gold .stat-num { color: var(--bq-gold); }
+.stat-unit { font-size: .8rem; color: var(--bq-gray); margin-left: 2px; }
+.stat-label { display: block; margin-top: .6rem; font-size: .86rem; font-weight: 500; color: var(--bq-ink); }
+
+/* ---- 剂型矩阵：悬停图片变虚、弹出剂型名 ---- */
+.form-card { display: block; position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow); }
+.form-ph { height: 210px; transition: filter .35s, transform .35s; }
+.form-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .45rem;
+  background: linear-gradient(160deg, rgba(20,81,63,.88), rgba(20,81,63,.72));
+  color: #fff; opacity: 0; transition: opacity .35s; backdrop-filter: blur(2px);
+  padding: 1rem; text-align: center;
+}
+.form-card:hover .form-ph { filter: blur(5px) opacity(.45); transform: scale(1.05); }
+.form-card:hover .form-overlay { opacity: 1; }
+.form-name { font-family: "Noto Serif SC", serif; font-size: 1.5rem; font-weight: 900; }
+.form-desc { font-size: .8rem; color: rgba(255,255,255,.8); letter-spacing: .08em; }
+.form-go { margin-top: .5rem; font-size: .8rem; border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: .3rem 1.1rem; }
+
+/* ---- 新闻中心：焦点大图 + 要闻速览 ---- */
+.news-grid { display: grid; grid-template-columns: 1.36fr 1fr; gap: 1.6rem; align-items: stretch; }
+.news-feature { position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow-lg); min-height: 480px; background: #0f2a22; }
+.nf-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .65s ease; pointer-events: none; }
+.nf-slide.on { opacity: 1; pointer-events: auto; }
+.nf-media { position: absolute; inset: 0; }
+.nf-watermark { position: absolute; right: 1.4rem; bottom: .6rem; font-size: 8rem; font-weight: 900; color: rgba(255,255,255,.10); line-height: 1; pointer-events: none; }
+.nf-imgtip { position: absolute; top: 1.1rem; right: 1.3rem; font-size: .68rem; letter-spacing: .2em; color: rgba(255,255,255,.55); }
+.nf-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 3rem 2rem 2rem; background: linear-gradient(to top, rgba(8,28,22,.95) 8%, rgba(8,28,22,.6) 52%, transparent); color: #fff; }
+.nf-cat { display: inline-block; font-size: .72rem; font-weight: 700; color: #fff; background: var(--bq-gold); border-radius: 999px; padding: .22rem .8rem; letter-spacing: .08em; }
+.nf-title { font-family: "Noto Serif SC", serif; font-size: clamp(1.2rem, 2.1vw, 1.55rem); font-weight: 900; line-height: 1.48; margin: .7rem 0 .55rem; }
+.nf-excerpt { font-size: .86rem; color: rgba(255,255,255,.78); line-height: 1.75; margin: 0 0 .9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nf-meta { font-size: .76rem; color: rgba(255,255,255,.62); display: flex; justify-content: space-between; align-items: center; }
+.nf-meta em { font-style: normal; color: #e6c47c; font-weight: 600; }
+.nf-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.16); z-index: 5; }
+.nf-progress-bar { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--bq-gold), #e6c47c); }
+.nf-progress-bar.run { animation: nfbar 5.2s linear forwards; }
+@keyframes nfbar { from { width: 0; } to { width: 100%; } }
+
+.news-side { display: flex; flex-direction: column; border: 1px solid var(--bq-line); border-radius: var(--bq-radius); background: #fff; overflow: hidden; box-shadow: var(--bq-shadow); }
+.ns-head { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.4rem; background: linear-gradient(135deg, var(--bq-green), var(--bq-green-2)); color: #fff; font-weight: 700; letter-spacing: .08em; font-size: .9rem; }
+.ns-more { color: rgba(255,255,255,.78); font-size: .78rem; font-weight: 400; }
+.ns-more:hover { color: #e6c47c; }
+.ns-item { flex: 1; display: flex; gap: .95rem; align-items: center; padding: .85rem 1.4rem; border-bottom: 1px solid var(--bq-line); border-left: 3px solid transparent; transition: background .25s, border-color .25s; }
+.ns-item:last-child { border-bottom: none; }
+.ns-num { font-size: 1.5rem; font-weight: 900; color: #cdd8d2; line-height: 1; font-variant-numeric: tabular-nums; transition: color .25s; flex: none; }
+.ns-item.on .ns-num { color: var(--bq-gold); }
+.ns-item.on { background: var(--bq-green-soft); border-left-color: var(--bq-gold); }
+.ns-item:hover { background: var(--bq-green-soft); }
+.ns-body { min-width: 0; }
+.ns-title { display: block; font-size: .9rem; font-weight: 600; color: var(--bq-ink); line-height: 1.55; margin-bottom: .25rem; transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ns-item.on .ns-title { color: var(--bq-green); }
+.ns-meta { font-size: .72rem; color: var(--bq-gray); }
+
+@media (max-width: 991.98px) {
+  .news-grid { grid-template-columns: 1fr; }
+  .news-feature { min-height: 360px; }
+  .ns-item { flex: none; }
+}
+@media (max-width: 767.98px) {
+  .nf-title { font-size: 1.15rem; }
+  .nf-excerpt { -webkit-line-clamp: 1; }
+  .ns-num { font-size: 1.2rem; }
+  .ns-item { padding: .7rem 1rem; gap: .65rem; }
+}
+
+/* ---- 企业相关卡片 ---- */
+.corp-card { display: block; border-radius: var(--bq-radius); overflow: hidden; background: #fff; box-shadow: var(--bq-shadow); transition: transform .3s, box-shadow .3s; }
+.corp-card:hover { transform: translateY(-8px); box-shadow: var(--bq-shadow-lg); }
+.corp-ph { height: 200px; }
+.corp-info { padding: 1.15rem 1.3rem 1.3rem; }
+.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.05rem; font-weight: 700; color: var(--bq-green); margin-bottom: .3rem; }
+.corp-info p { font-size: .83rem; color: var(--bq-gray); margin: 0; }
+
+@media (max-width: 767.98px) { .banner-ph { height: 420px; } .factory-ph { height: 260px; } }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* 焦点大图 + 速览列表联动轮播 */
+(function () {
+  var feature = document.querySelector('.news-feature');
+  if (!feature) return;
+  var slides = feature.querySelectorAll('.nf-slide');
+  var rows = document.querySelectorAll('.ns-item');
+  var bar = feature.querySelector('.nf-progress-bar');
+  var idx = 0, timer = null, DUR = 5200;
+
+  function set(i) {
+    idx = (i + slides.length) % slides.length;
+    slides.forEach(function (s, j) { s.classList.toggle('on', j === idx); });
+    rows.forEach(function (r, j) { r.classList.toggle('on', j === idx); });
+    if (bar) { bar.classList.remove('run'); void bar.offsetWidth; bar.classList.add('run'); }
+  }
+  function play() { stop(); timer = setInterval(function () { set(idx + 1); }, DUR); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+  rows.forEach(function (r) {
+    r.addEventListener('mouseenter', function () { set(parseInt(r.dataset.idx, 10)); });
+  });
+  feature.addEventListener('mouseenter', stop);
+  feature.addEventListener('mouseleave', play);
+  set(0); play();
+})();
+</script>
+{% endblock %}
