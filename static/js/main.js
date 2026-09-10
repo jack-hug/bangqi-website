@@ -1,15 +1,18 @@
 /* 邦琪药业官网 - 全局脚本 */
 document.addEventListener("DOMContentLoaded", function () {
-  /* 数字递增动画（仅数字，方块卡无 SVG 进度环） */
+  /* 数字递增动画 + 朱红 SVG 进度环同步（pathLength=100，描边偏移 100→0） */
   function animateCounter(el) {
     const target = parseInt(el.dataset.target, 10) || 0;
     const duration = 1600;
     const start = performance.now();
+    const card = el.closest(".stat-card");
+    const ring = card ? card.querySelector(".stat-ring-fg") : null;
     function tick(now) {
       const p = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - p, 3);
       const val = Math.round(target * eased);
       el.textContent = val.toLocaleString("en-US");
+      if (ring) ring.style.strokeDashoffset = (100 * (1 - eased)).toFixed(2);
       if (p < 1) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);

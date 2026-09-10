@@ -57,12 +57,18 @@
         <div class="sec-kicker not-center">ABOUT US</div>
         <h2 class="sec-title text-start">三十余载·只为放心好药</h2>
         <p class="intro-text">{{ COMPANY.intro }}</p>
-        <!-- 三个数据卡（数据库驱动，数字动态跳跃生成；统一方块 + 5px 碧青 border） -->
+        <!-- 三个数据卡（数据库驱动；居中圆形 + 朱红 SVG 进度环 + 内部跳动数字） -->
         <div class="stat-row stat-row-center">
           {% for s in home_stats %}
           <div class="stat-circle">
             <div class="stat-card">
-              <span class="stat-num" data-target="{{ s.value }}">0</span><span class="stat-unit">{{ s.unit }}</span>
+              <svg class="stat-ring" viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="stat-ring-bg" cx="60" cy="60" r="52"/>
+                <circle class="stat-ring-fg" cx="60" cy="60" r="52" pathLength="100"/>
+              </svg>
+              <div class="stat-num-wrap">
+                <span class="stat-num" data-target="{{ s.value }}">0</span><span class="stat-unit">{{ s.unit }}</span>
+              </div>
             </div>
             <span class="stat-label">{{ s.label }}</span>
           </div>
@@ -212,46 +218,75 @@
 .shadow-bq { box-shadow: var(--bq-shadow-lg); }
 .sec-kicker.not-center::before { display: none; }
 
-/* ---- 现代化数据卡：统一白底方块 + 5px 碧青 border + 大数字，居中 ---- */
+/* ---- 居中圆形数据卡：白底圆 + 朱红 SVG 描边进度环 + 圆心跳动数字 ---- */
 .stat-row {
-  display: flex; justify-content: center; align-items: stretch;
-  gap: 1.8rem; margin-top: 2rem; flex-wrap: wrap;
+  display: flex; justify-content: center; align-items: flex-start;
+  gap: 2.2rem; margin-top: 2rem; flex-wrap: wrap;
   width: 100%;
 }
 .stat-row-center { text-align: center; }
-.stat-circle { text-align: center; display: flex; flex-direction: column; align-items: center; gap: .7rem; }
+.stat-circle {
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: .85rem;
+}
 .stat-card {
+  position: relative;
+  width: 124px; height: 124px;
   background: #fff;
-  border: 5px solid var(--bq-teal);
-  border-radius: var(--bq-radius);
-  padding: 1.1rem 1.6rem;
-  min-width: 130px;
-  display: flex; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(230, 33, 41, .08);
   transition: transform .35s cubic-bezier(.2,.8,.3,1), box-shadow .35s;
 }
 .stat-circle:hover .stat-card {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(26,111,117,.20);
+  box-shadow: 0 12px 28px rgba(230, 33, 41, .18);
+}
+/* SVG 进度环 */
+.stat-ring {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.stat-ring-bg, .stat-ring-fg {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.stat-ring-bg { stroke: rgba(230, 33, 41, .10); }   /* 朱红浅底 */
+.stat-ring-fg {
+  stroke: var(--bq-red);                            /* 朱红主色 */
+  /* 使用 pathLength=100，描边偏移 100 = 空，0 = 满；JS 动画驱动 */
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset .15s linear;
+}
+.stat-circle:hover .stat-ring-fg { stroke: var(--bq-red-2); }
+
+.stat-num-wrap {
+  position: relative; z-index: 2;
+  display: flex; align-items: baseline; gap: 3px;
+  font-family: "Noto Serif SC", serif;
 }
 .stat-num {
-  font-family: "Noto Serif SC", serif;
-  font-size: 2.2rem; font-weight: 900;
-  color: var(--bq-teal); line-height: 1;
+  font-size: 2.1rem; font-weight: 900;
+  color: var(--bq-red); line-height: 1;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
 }
 .stat-unit {
-  font-size: .82rem; color: var(--bq-gray);
-  font-weight: 600;
+  font-size: .78rem; color: var(--bq-red-2);
+  font-weight: 700;
 }
 .stat-label {
-  font-size: .88rem; font-weight: 600; color: var(--bq-ink);
+  font-size: .9rem; font-weight: 600; color: var(--bq-ink);
   letter-spacing: .04em;
 }
 
 @media (max-width: 575.98px) {
   .stat-row { gap: 1rem; }
-  .stat-card { min-width: 110px; padding: .9rem 1.2rem; }
-  .stat-num { font-size: 1.8rem; }
+  .stat-card { width: 96px; height: 96px; }
+  .stat-num { font-size: 1.55rem; }
 }
 
 /* ---- 剂型矩阵：悬停图片变虚，弹出剂型名 ---- */
