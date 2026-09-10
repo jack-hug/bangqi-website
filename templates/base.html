@@ -11,16 +11,16 @@
 </head>
 <body>
 
-<!-- 顶部信息条 -->
-<div class="topbar">
+<!-- 顶部信息条（首页可由 .home-v1 + .is-banner-slide 控制显隐） -->
+<div class="topbar" id="site-topbar">
   <div class="container d-flex justify-content-between align-items-center">
     <span class="topbar-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 传承中药精华 · 服务大众健康</span>
     <span class="topbar-text">咨询热线：{{ COMPANY.phone }}</span>
   </div>
 </div>
 
-<!-- 通用导航栏 -->
-<nav class="navbar navbar-expand-lg sticky-top site-nav">
+<!-- 通用导航栏（首页可由 .home-v1 控制为半透明背景） -->
+<nav class="navbar navbar-expand-lg sticky-top site-nav" id="site-nav">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center gap-2" href="/">
       <!-- LOGO 色块占位 -->
