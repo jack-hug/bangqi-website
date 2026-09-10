@@ -30,23 +30,39 @@ document.addEventListener("DOMContentLoaded", function () {
     counters.forEach(animateCounter);
   }
 
-  /* 滚动上浮动画（企业相关四张卡片） - 进入视口触发，离开后再回来重新触发 */
+  /* 滚动上浮动画：监听 section（不是单张卡片），section 进入视口 ≥55% 时
+     统一触发该 section 内所有 .rise 元素错峰弹出，动画仅触发一次。
+     避免单卡片 18% 可见就早早触发，用户滚到位时动画已播完。 */
   const risers = document.querySelectorAll(".rise");
   if ("IntersectionObserver" in window && risers.length) {
+    // 按所属 section 分组
+    const groups = new Map();
+    risers.forEach((el) => {
+      const sec = el.closest("section") || document.body;
+      if (!groups.has(sec)) groups.set(sec, []);
+      groups.get(sec).push(el);
+    });
+
     const ro = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.remove("rise-in");
-            // 强制重排，重新触发动画
-            void e.target.offsetWidth;
-            e.target.classList.add("rise-in");
+          if (e.isIntersecting && e.intersectionRatio >= 0.55) {
+            const list = groups.get(e.target) || [];
+            list.forEach((el, idx) => {
+              // 给每张卡片 inline 错峰延迟（CSS :nth-child 在多 col 布局中失效）
+              el.style.transitionDelay = (idx * 0.14) + "s";
+              el.classList.remove("rise-in");
+              // 强制重排，重新触发动画
+              void el.offsetWidth;
+              el.classList.add("rise-in");
+            });
+            ro.unobserve(e.target); // 只触发一次
           }
         });
       },
-      { threshold: 0.18 }
+      { threshold: [0, 0.25, 0.5, 0.55, 0.6, 0.75, 1] }
     );
-    risers.forEach((el) => ro.observe(el));
+    groups.forEach((_, sec) => ro.observe(sec));
   } else {
     risers.forEach((el) => el.classList.add("rise-in"));
   }

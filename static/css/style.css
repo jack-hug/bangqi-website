@@ -331,13 +331,10 @@ a:hover { color: var(--bq-gold); }
 }
 
 /* ---------- 滚动上浮动画（企业相关等） ---------- */
-/* 默认状态：完全隐藏 + 下移 70px；触发动画后弹出来 */
+/* 默认状态：完全隐藏 + 下移 70px；触发动画后弹出来。
+   错峰延迟由 main.js 按数组索引 inline 设置（CSS :nth-child 在多 col 布局中失效） */
 .rise { opacity: 0; transform: translateY(70px); transition: opacity 1.1s cubic-bezier(.16,.84,.36,1), transform 1.1s cubic-bezier(.16,.84,.36,1); }
 .rise.rise-in { opacity: 1; transform: translateY(0); }
-/* 4 张卡片错位延迟 */
-.rise:nth-child(2) { transition-delay: .14s; }
-.rise:nth-child(3) { transition-delay: .28s; }
-.rise:nth-child(4) { transition-delay: .42s; }
 
 @media (max-width: 991.98px) {
   .section { padding: 3rem 0; }
