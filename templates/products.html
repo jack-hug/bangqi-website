@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}产品中心 - 邦琪药业{% endblock %}
+
+{% block content %}
+<!-- 页面横幅 -->
+<div class="page-hero">
+  <div class="container">
+    <h1>产品中心</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">主页</a></li>
+        <li class="breadcrumb-item active" aria-current="page">产品中心</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-3">
+      <!-- 筛选列表：按剂型 / 按商标 / 按功能 / 按生产企业，可随时扩展 -->
+      <aside class="layout-side sticky-top" style="top: 90px;">
+        <div class="side-group-title">产品筛选</div>
+        <div class="p-3">
+          <div class="filter-group">
+            <h6 class="filter-title">按剂型</h6>
+            <div class="filter-tags">
+              <a href="/products{{ qs_except('form') }}" class="filter-tag {{ 'active' if not cur_form }}">全部</a>
+              {% for f in DOSAGE_FORMS %}
+              <a href="/products{{ qs_append('form', f) }}" class="filter-tag {{ 'active' if cur_form == f }}">{{ f }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <h6 class="filter-title">按生产企业</h6>
+            <div class="filter-tags">
+              <a href="/products{{ qs_except('manufacturer') }}" class="filter-tag {{ 'active' if not cur_manufacturer }}">全部</a>
+              {% for m in manufacturers %}
+              <a href="/products{{ qs_append('manufacturer', m) }}" class="filter-tag {{ 'active' if cur_manufacturer == m }}">{{ m }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <h6 class="filter-title">按商标</h6>
+            <div class="filter-tags">
+              <a href="/products{{ qs_except('trademark') }}" class="filter-tag {{ 'active' if not cur_trademark }}">全部</a>
+              {% for t in trademarks %}
+              <a href="/products{{ qs_append('trademark', t) }}" class="filter-tag {{ 'active' if cur_trademark == t }}">{{ t }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <h6 class="filter-title">按功能</h6>
+            <div class="filter-tags">
+              <a href="/products{{ qs_except('func') }}" class="filter-tag {{ 'active' if not cur_func }}">全部</a>
+              {% for fn in functions %}
+              <a href="/products{{ qs_append('func', fn) }}" class="filter-tag {{ 'active' if cur_func == fn }}">{{ fn }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="col-lg-9">
+      <div class="d-flex justify-content-between align-items-baseline mb-4">
+        <span class="result-count">共 <strong>{{ total }}</strong> 个产品
+          {% if cur_manufacturer %}· 生产企业「{{ cur_manufacturer }}」{% endif %}
+          {% if cur_form %}· 剂型「{{ cur_form }}」{% endif %}
+          {% if cur_trademark %}· 商标「{{ cur_trademark }}」{% endif %}
+          {% if cur_func %}· 功能「{{ cur_func }}」{% endif %}
+        </span>
+        <span class="result-count">第 {{ page }} / {{ pages }} 页</span>
+      </div>
+
+      <!-- 产品列表 4 × 3 -->
+      <div class="row g-4">
+        {% for p in products %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+          <div class="product-card">
+            {% if p.manufacturer %}
+            <span class="product-mfg-badge" title="生产企业">{{ p.manufacturer }}</span>
+            {% endif %}
+            <!-- 产品图片：未上传时显示纯色PNG占位图，悬停显示名称/功能主治/查看按钮 -->
+            <div class="ph {{ p.color }} product-ph">
+              <img src="{{ img_url(p.image, 'product', p.color) }}" alt="{{ p.name }}">
+            </div>
+            <div class="product-overlay">
+              <h6>{{ p.name }}</h6>
+              <p>{{ p.indications }}</p>
+              <a href="/products/{{ p.id }}" class="btn-view">点击查看</a>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="col-12"><div class="empty-tip">暂无符合筛选条件的产品，请调整筛选条件。</div></div>
+        {% endfor %}
+      </div>
+
+      <!-- 分页 -->
+      {% if pages > 1 %}
+      <nav class="mt-5"><ul class="pagination justify-content-center pagination-bq">
+        <li class="page-item {{ 'disabled' if page == 1 }}"><a class="page-link" href="?page={{ page - 1 }}{{ qs_page }}">上一页</a></li>
+        {% for i in range(1, pages + 1) %}
+        <li class="page-item {{ 'active' if i == page }}"><a class="page-link" href="?page={{ i }}{{ qs_page }}">{{ i }}</a></li>
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if page == pages }}"><a class="page-link" href="?page={{ page + 1 }}{{ qs_page }}">下一页</a></li>
+      </ul></nav>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.filter-group { margin-bottom: 1.25rem; }
+.product-mfg-badge {
+  position: absolute;
+  top: .55rem;
+  left: .55rem;
+  z-index: 5;
+  padding: .22rem .65rem;
+  font-size: .72rem;
+  font-weight: 500;
+  color: var(--bq-red);
+  background: rgba(255, 255, 255, .92);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(20, 81, 63, .12);
+  letter-spacing: .02em;
+}
+.filter-title { font-size: .82rem; font-weight: 700; color: var(--bq-red); margin-bottom: .6rem; letter-spacing: .06em; }
+.filter-tags { display: flex; flex-wrap: wrap; gap: .45rem; }
+.filter-tag {
+  font-size: .8rem; color: var(--bq-ink); background: var(--bq-bg);
+  border: 1px solid var(--bq-line); border-radius: 999px; padding: .28rem .8rem; transition: all .2s;
+}
+.filter-tag:hover { border-color: var(--bq-red); color: var(--bq-red); }
+.filter-tag.active { background: var(--bq-red); border-color: var(--bq-red); color: #fff; }
+.result-count { font-size: .86rem; color: var(--bq-gray); }
+.result-count strong { color: var(--bq-red); }
+
+.product-card { position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow); }
+.product-ph { height: 230px; transition: filter .35s, transform .35s; }
+.product-overlay {
+  position: absolute; inset: 0; padding: 1.2rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .55rem;
+  background: linear-gradient(160deg, rgba(154,14,20,.9), rgba(154,14,20,.74));
+  color: #fff; opacity: 0; transition: opacity .35s; text-align: center;
+}
+.product-card:hover .product-ph { filter: blur(5px) opacity(.4); transform: scale(1.06); }
+.product-card:hover .product-overlay { opacity: 1; }
+.product-overlay h6 { font-family: "Noto Serif SC", serif; font-size: 1.02rem; font-weight: 700; margin: 0; }
+.product-overlay p { font-size: .74rem; color: rgba(255,255,255,.85); line-height: 1.6; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.btn-view {
+  margin-top: .2rem; font-size: .78rem; border: 1px solid rgba(255,255,255,.65); color: #fff;
+  border-radius: 999px; padding: .32rem 1.2rem; transition: all .2s;
+}
+.btn-view:hover { background: var(--bq-gold); border-color: var(--bq-gold); color: #fff; }
+.empty-tip { padding: 3rem 1rem; text-align: center; color: var(--bq-gray); border: 1px dashed var(--bq-line); border-radius: var(--bq-radius); }
+.pagination-bq .page-link { color: var(--bq-red); border: 1px solid var(--bq-line); margin: 0 3px; border-radius: 8px !important; font-size: .88rem; }
+.pagination-bq .page-item.active .page-link { background: var(--bq-red); border-color: var(--bq-red); color: #fff; }
+</style>
+{% endblock %}

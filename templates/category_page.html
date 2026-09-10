@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ active }} - {{ section_title }} - 邦琪药业{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <h1>{{ section_title }}</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">主页</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ active }}</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+    <!-- 左侧：分类（无热门文章） -->
+    <div class="col-lg-3">
+      <aside class="layout-side sticky-top" style="top: 90px;">
+        <div class="side-group-title">{{ section_title }}</div>
+        <ul class="side-list">
+          {% for cat in pages %}
+          <li><a href="/{{ base_url }}/{{ cat }}" class="{{ 'active' if cat == active }}"><span class="dot"></span>{{ cat }}</a></li>
+          {% endfor %}
+        </ul>
+      </aside>
+    </div>
+
+    <!-- 右侧：点击分类直接显示内容 -->
+    <div class="col-lg-9">
+      {% set page = pages[active] %}
+      <div class="content-card">
+        <h2>{{ page.title }}</h2>
+
+        {% if page.stats %}
+        <div class="cat-stats mb-4">
+          {% for label, val in page.stats %}
+          <div class="cat-stat"><strong class="serif">{{ val }}</strong><span>{{ label }}</span></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% set cat_list = pages.keys() | list %}
+        {% set hero_colors = ['ph-green', 'ph-ta', 'ph-am', 'ph-ti'] %}
+        {% set hero_color = hero_colors[cat_list.index(active) % 4] %}
+        <!-- 栏目头图：未上传时显示纯色PNG占位图 -->
+        <div class="ph {{ hero_color }} cat-hero">
+          <img src="{{ img_url(page.image, 'cat-hero', hero_color) }}" alt="{{ page.title }}">
+        </div>
+
+        {% for subtitle, body in page.sections %}
+        <h3>{{ subtitle }}</h3>
+        <div class="rich-content">{{ body | safe }}</div>
+        {% endfor %}
+
+        {% if page.sections | length < 3 %}
+        <div class="row g-3 mt-3">
+          <div class="col-sm-6"><div class="ph ph-gray cat-img"><img src="{{ img_url(None, 'cat-img', 'ph-gray') }}" alt="栏目配图"></div></div>
+          <div class="col-sm-6"><div class="ph ph-ta cat-img"><img src="{{ img_url(None, 'cat-img', 'ph-ta') }}" alt="栏目配图"></div></div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.cat-stats { display: flex; flex-wrap: wrap; gap: 1rem; }
+.cat-stat {
+  flex: 1; min-width: 120px; text-align: center;
+  background: var(--bq-red-soft); border-radius: 12px; padding: 1rem .6rem;
+}
+.cat-stat strong { display: block; font-size: 1.6rem; font-weight: 900; color: var(--bq-red); line-height: 1.2; }
+.cat-stat span { font-size: .78rem; color: var(--bq-gray); }
+.cat-hero { height: 240px; border-radius: 12px; margin-bottom: .6rem; }
+.cat-img { height: 150px; border-radius: 10px; font-size: .78rem; }
+</style>
+{% endblock %}

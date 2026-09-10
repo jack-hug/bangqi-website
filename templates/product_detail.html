@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} - 产品中心 - 邦琪药业{% endblock %}
+
+{% block content %}
+<!-- 页面横幅 -->
+<div class="page-hero">
+  <div class="container">
+    <h1>{{ p.name }}</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">主页</a></li>
+        <li class="breadcrumb-item"><a href="/products">产品中心</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ p.name }}</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+    <!-- 左侧：热门产品（按点击率前20） -->
+    <div class="col-lg-3">
+      <aside class="layout-side sticky-top" style="top: 90px;">
+        <div class="side-group-title">热门产品</div>
+        <ol class="hot-list ranked">
+          {% for hp in hot_products %}
+          <li>
+            <a href="/products/{{ hp.id }}">
+              <span class="hot-rank">{{ loop.index }}</span>
+              <span class="hot-name">{{ hp.name }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ol>
+      </aside>
+    </div>
+
+    <!-- 右侧：产品区 -->
+    <div class="col-lg-9">
+      <!-- 小导航：全部产品 / 剂型 / 产品名称 -->
+      <nav class="mini-nav" aria-label="breadcrumb">
+        <a href="/products">全部产品</a><span>/</span>
+        <a href="/products?form={{ p.form }}">{{ p.form }}</a><span>/</span>
+        <span class="cur">{{ p.name }}</span>
+      </nav>
+
+      <div class="content-card">
+        <!-- 标题栏：大标题 + 发布时间 -->
+        <h2 class="pd-title">{{ p.name }}</h2>
+        <p class="pd-date">发布时间：{{ p.date }}　|　{{ p.trademark }}　|　{{ p.func }}</p>
+        <hr>
+
+        <div class="row g-4 mt-1">
+          <!-- 左：产品图片（按上传数量自动切换） -->
+          <div class="col-md-5">
+            <div id="pdGallery" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="3500">
+              <div class="carousel-inner rounded-4 overflow-hidden">
+                {% for img in images %}
+                <div class="carousel-item {{ 'active' if loop.first }}">
+                  <div class="ph {{ img.color or 'ph-green' }} pd-ph">
+                    <img src="{{ img_url(img.image, 'product-detail', img.color or p.color) }}" alt="{{ p.name }}">
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="carousel-indicators pd-indicators">
+                {% for img in images %}
+                <button type="button" data-bs-target="#pdGallery" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first }}"></button>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- 右：产品信息表格 -->
+          <div class="col-md-7">
+            <table class="pd-table">
+              <tbody>
+                <tr><th>产品名称</th><td>{{ p.name }}</td></tr>
+                <tr><th>剂型</th><td>{{ p.form }}</td></tr>
+                <tr><th>规格</th><td>{{ p.spec }}</td></tr>
+                <tr><th>功能主治</th><td>{{ p.indications }}</td></tr>
+                <tr><th>用法用量</th><td>{{ p.usage }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <hr>
+
+          <!-- 产品介绍：后台富文本编辑，支持图文混排（可插入图片） -->
+          <div class="pd-edit-zone">
+            <h3>产品介绍</h3>
+            <div class="rich-content">{{ (p.content or (p.name ~ '是公司' ~ p.form ~ '代表性品种之一，收载于国家药品标准，历经多年临床验证与工艺打磨。')) | safe }}</div>
+          </div>
+          {% if images | length > 3 %}
+          <!-- 产品宣传图（第 4 张起的图片在此展示） -->
+          <div class="row g-3 mt-2">
+            {% for img in images[3:] %}
+            <div class="col-sm-4"><div class="ph {{ img.color or 'ph-gray' }} pd-banner-ph"><img src="{{ img_url(img.image, 'product-banner', img.color or 'ph-gray') }}" alt="{{ p.name }}"></div></div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+        <hr>
+
+        <!-- 同剂型上一个/下一个产品 -->
+        <div class="prev-next">
+          <a href="/products/{{ prev_p.id }}">
+            <span class="pn-label">上一个：{{ p.form }}</span>
+            <span class="pn-title">{{ prev_p.name }}</span>
+          </a>
+          <a href="/products/{{ next_p.id }}" class="next">
+            <span class="pn-label">下一个：{{ p.form }}</span>
+            <span class="pn-title">{{ next_p.name }} →</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.mini-nav { display: flex; align-items: center; gap: .6rem; font-size: .85rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.mini-nav a { color: var(--bq-gray); }
+.mini-nav a:hover { color: var(--bq-red); }
+.mini-nav span { color: var(--bq-line); }
+.mini-nav .cur { color: var(--bq-red); font-weight: 600; }
+.pd-title { margin-bottom: .4rem !important; padding-bottom: 0 !important; border-bottom: none !important; }
+.pd-title::after { display: none; }
+.pd-date { font-size: .8rem; color: var(--bq-gray); margin: 0; }
+.content-card hr { border: none; border-top: 1px solid var(--bq-line); opacity: 1; margin: 1.5rem 0; }
+.pd-ph { height: 300px; }
+.pd-indicators { margin-bottom: .7rem; }
+.pd-indicators [data-bs-target] { width: 22px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
+.pd-indicators .active { background: var(--bq-gold); }
+.pd-table { width: 100%; border-collapse: collapse; }
+.pd-table th, .pd-table td { border-bottom: 1px solid var(--bq-line); padding: .8rem .9rem; font-size: .9rem; vertical-align: top; }
+.pd-table th { width: 96px; color: var(--bq-red); font-weight: 700; white-space: nowrap; }
+.pd-table tr:last-child th, .pd-table tr:last-child td { border-bottom: none; }
+.pd-edit-zone h3 { margin-top: 1.2rem; }
+.rich-content { line-height: 1.9; color: #4a5852; font-size: .95rem; text-align: justify; }
+.rich-content img { max-width: 100%; height: auto; border-radius: 8px; margin: .5rem 0; }
+.rich-content h1, .rich-content h2, .rich-content h3, .rich-content h4 { color: var(--bq-red); margin-top: 1rem; }
+.rich-content p { margin-bottom: .8rem; }
+.rich-content ul, .rich-content ol { padding-left: 1.4rem; margin-bottom: .8rem; }
+.pd-banner-ph { height: 130px; border-radius: 10px; font-size: .78rem; }
+.hot-list.ranked .hot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+{% endblock %}

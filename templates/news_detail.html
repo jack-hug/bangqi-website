@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ n.title }} - 邦资讯 - 邦琪药业{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <h1 style="font-size: clamp(1.3rem, 2.6vw, 1.9rem);">{{ n.title }}</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">主页</a></li>
+        <li class="breadcrumb-item"><a href="/news">全部新闻</a></li>
+        <li class="breadcrumb-item"><a href="/news?category={{ n.category }}">{{ n.category }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">正文</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-3">
+      <aside class="layout-side sticky-top" style="top: 90px;">
+        <div class="side-group-title">资讯分类</div>
+        <ul class="side-list">
+          <li><a href="/news"><span class="dot"></span>全部资讯</a></li>
+          {% for c in NEWS_CATEGORIES %}
+          <li><a href="/news?category={{ c }}" class="{{ 'active' if c == n.category }}"><span class="dot"></span>{{ c }}</a></li>
+          {% endfor %}
+        </ul>
+      </aside>
+    </div>
+
+    <div class="col-lg-9">
+      <div class="content-card">
+        <!-- 文章标题 / 发布时间 / 正文 -->
+        <h2>{{ n.title }}</h2>
+        <p class="pd-date mb-3">发布时间：{{ n.date }}　|　{{ n.category }}　|　阅读 {{ n.clicks }}</p>
+        <hr>
+        <div class="article-body">
+          <!-- 文章正文（富文本，支持图文混排；与产品介绍共用 .rich-content 样式） -->
+          <div class="rich-content">{{ n.content | safe }}</div>
+          <!-- 正文配图：未上传时显示纯色PNG占位图 -->
+          <div class="ph ph-green article-img">
+            <img src="{{ img_url(n.image, 'news-article', 'ph-green') }}" alt="{{ n.title }}">
+          </div>
+          <p>{{ COMPANY.news_footer }}</p>
+        </div>
+
+        <!-- 上一篇 / 下一篇 -->
+        <hr>
+        <div class="prev-next">
+          {% if prev_n %}
+          <a href="/news/{{ prev_n.id }}">
+            <span class="pn-label">上一篇</span>
+            <span class="pn-title">{{ prev_n.title }}</span>
+          </a>
+          {% else %}
+          <a class="disabled-link"><span class="pn-label">上一篇</span><span class="pn-title">已经是最新一篇</span></a>
+          {% endif %}
+          {% if next_n %}
+          <a href="/news/{{ next_n.id }}" class="next">
+            <span class="pn-label">下一篇</span>
+            <span class="pn-title">{{ next_n.title }} →</span>
+          </a>
+          {% else %}
+          <a class="next disabled-link"><span class="pn-label">下一篇</span><span class="pn-title">已经是最后一篇</span></a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.pd-date { font-size: .8rem; color: var(--bq-gray); margin: 0; }
+.content-card hr { border: none; border-top: 1px solid var(--bq-line); opacity: 1; margin: 1.4rem 0; }
+.lead-para { font-size: 1.02rem !important; color: var(--bq-ink) !important; }
+.article-img { height: 220px; border-radius: 12px; margin: 1.2rem 0; }
+.disabled-link { pointer-events: none; opacity: .55; background: var(--bq-bg); }
+</style>
+{% endblock %}

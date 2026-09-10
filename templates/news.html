@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}邦资讯 - 邦琪药业{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <h1>邦资讯</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">主页</a></li>
+        <li class="breadcrumb-item active" aria-current="page">邦资讯</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+    <!-- 左侧：分类 + 热门文章（按点击率前10） -->
+    <div class="col-lg-3">
+      <aside class="layout-side sticky-top" style="top: 90px;">
+        <div class="side-group-title">资讯分类</div>
+        <ul class="side-list">
+          <li><a href="/news" class="{{ 'active' if not cur_category }}"><span class="dot"></span>全部资讯</a></li>
+          {% for c in NEWS_CATEGORIES %}
+          <li><a href="/news?category={{ c }}" class="{{ 'active' if cur_category == c }}"><span class="dot"></span>{{ c }}</a></li>
+          {% endfor %}
+        </ul>
+      </aside>
+      <div class="layout-side hot-panel">
+        <div class="side-group-title">热门文章</div>
+        <ol class="hot-list">
+          {% for hn in hot_news %}
+          <li><a href="/news/{{ hn.id }}"><span class="hot-rank">{{ loop.index }}</span><span>{{ hn.title }}</span></a></li>
+          {% endfor %}
+        </ol>
+      </div>
+    </div>
+
+    <!-- 右侧：文章列表 -->
+    <div class="col-lg-9">
+      <div class="content-card p-3 p-sm-4">
+        {% for n in news_list %}
+        <a href="/news/{{ n.id }}" class="article-row">
+          <div class="d-flex gap-3 align-items-center">
+            <!-- 文章配图：未上传时显示纯色PNG占位图 -->
+            <div class="ph {{ ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4] }}">
+              <img src="{{ img_url(n.image, 'news-thumb', ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4]) }}" alt="{{ n.title }}">
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <span class="ar-cat">{{ n.category }}</span>
+              <div class="ar-title">{{ n.title }}</div>
+              <div class="ar-meta mt-1">{{ n.date }}　·　阅读 {{ n.clicks }}</div>
+              <p class="ar-excerpt">{{ n.content | striptags | truncate(64) }}</p>
+            </div>
+          </div>
+        </a>
+        {% else %}
+        <div class="empty-tip">该分类下暂无文章。</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.article-row .ph { width: 132px; height: 92px; border-radius: 10px; flex: none; }
+.min-w-0 { min-width: 0; }
+.empty-tip { padding: 3rem 1rem; text-align: center; color: var(--bq-gray); }
+</style>
+{% endblock %}
