@@ -363,20 +363,20 @@
   .ns-item { padding: .7rem 1rem; gap: .65rem; }
 }
 
-/* ---- 企业相关卡片（图片 370×650） ---- */
+/* ---- 企业相关卡片（图片 370×650，卡片高度自适应无底部留空） ---- */
 .corp-card {
   display: block; border-radius: var(--bq-radius); overflow: hidden;
   background: #fff; box-shadow: var(--bq-shadow);
   transition: transform .35s, box-shadow .35s;
-  aspect-ratio: 37 / 65;
 }
 .corp-card:hover { transform: translateY(-8px); box-shadow: var(--bq-shadow-lg); }
-.corp-ph, .corp-img-wrap { position: relative; height: auto; min-height: 260px; }
+.corp-ph, .corp-img-wrap { position: relative; height: auto; }
 .corp-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
-.corp-img-wrap, .corp-ph { aspect-ratio: 37 / 48; }
-.corp-info { padding: 1.15rem 1.3rem 1.3rem; }
-.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.05rem; font-weight: 700; color: var(--bq-red); margin-bottom: .3rem; }
-.corp-info p { font-size: .83rem; color: var(--bq-gray); margin: 0; }
+/* 图片区域精确 370:650 比例，与 placeholder.py SIZES["corp"] 一致 */
+.corp-img-wrap, .corp-ph { aspect-ratio: 37 / 65; }
+.corp-info { padding: 1rem 1.3rem 1.25rem; }
+.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.05rem; font-weight: 700; color: var(--bq-red); margin-bottom: .35rem; }
+.corp-info p { font-size: .83rem; color: var(--bq-gray); margin: 0; line-height: 1.5; }
 
 @media (max-width: 991.98px) { .banner-ph { height: 560px; } .factory-ph { height: 320px; } }
 @media (max-width: 767.98px) { .banner-ph { height: 460px; } .factory-ph { height: 260px; } }
