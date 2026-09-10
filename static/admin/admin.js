@@ -970,15 +970,14 @@ function buildImageField(key, label, val) {
   return `
   <div class="img-field">
     <input type="hidden" name="${key}" value="${escapeHtml(val)}">
-    <div class="img-preview-wrap ${val ? "" : "empty"}">
+    <div class="img-preview-wrap ${val ? "has-img" : "empty"}">
       <img id="imgPrev_${key}" src="${val ? escapeHtml(val) : ""}" style="${val ? "" : "display:none"}" alt="预览">
-      <span class="img-preview-tip ${val ? "d-none" : ""}">尚未上传，前台将显示对应分辨率的纯色占位图</span>
+      <span class="img-preview-tip ${val ? "d-none" : ""}">尚未上传图片<br><span style="font-size:.74rem;color:#909399;">支持 PNG / JPG / GIF / WEBP，最大 8MB</span></span>
     </div>
     <div class="img-actions">
-      <label class="btn-img-upload">选择图片上传<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onchange="handleImgUpload(this, '${key}')"></label>
+      <label class="btn-img-upload">📁 选择图片上传<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onchange="handleImgUpload(this, '${key}')"></label>
       <button type="button" class="btn-img-clear" onclick="clearImgField('${key}')">移除图片</button>
     </div>
-    <div class="img-tip">支持 PNG / JPG / GIF / WEBP，最大 8MB</div>
   </div>`;
 }
 
@@ -1003,6 +1002,7 @@ async function handleImgUpload(input, key) {
       prev.src = data.url;
       prev.style.display = "";
       prev.parentElement.classList.remove("empty");
+      prev.parentElement.classList.add("has-img");
       const tip = prev.parentElement.querySelector(".img-preview-tip");
       if (tip) tip.classList.add("d-none");
     }
@@ -1021,6 +1021,7 @@ function clearImgField(key) {
     prev.style.display = "none";
     prev.src = "";
     prev.parentElement.classList.add("empty");
+    prev.parentElement.classList.remove("has-img");
     const tip = prev.parentElement.querySelector(".img-preview-tip");
     if (tip) tip.classList.remove("d-none");
   }

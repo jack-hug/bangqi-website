@@ -58,11 +58,31 @@
         <h2 class="sec-title text-start">三十余载·只为放心好药</h2>
         <p class="intro-text">{{ COMPANY.intro }}</p>
         <!-- 三个数据圆环（数据库驱动，数字动态跳跃生成） -->
-        <div class="stat-row">
+        <!-- 现代化设计：SVG 进度环 + 大数字 + 微光点，居中 -->
+        <div class="stat-row stat-row-center">
           {% for s in home_stats %}
           <div class="stat-circle">
-            <div class="stat-ring {{ 'ring-gold' if loop.index == 2 }}">
-              <span class="stat-num" data-target="{{ s.value }}">0</span><span class="stat-unit">{{ s.unit }}</span>
+            <div class="stat-ring {{ 'ring-teal' if loop.index == 2 }}">
+              <svg class="stat-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
+                <defs>
+                  <linearGradient id="ringGrad{{ loop.index }}" x1="0%" y1="0%" x2="100%" y2="100%">
+                    {% if loop.index == 2 %}
+                      <stop offset="0%" stop-color="#1A6F75"/>
+                      <stop offset="100%" stop-color="#4FA3A8"/>
+                    {% else %}
+                      <stop offset="0%" stop-color="#E62129"/>
+                      <stop offset="100%" stop-color="#FF444F"/>
+                    {% endif %}
+                  </linearGradient>
+                </defs>
+                <circle class="stat-track" cx="60" cy="60" r="50" />
+                <circle class="stat-bar" cx="60" cy="60" r="50"
+                        stroke="url(#ringGrad{{ loop.index }})"
+                        data-target="{{ s.value }}" />
+              </svg>
+              <div class="stat-text">
+                <span class="stat-num" data-target="{{ s.value }}">0</span><span class="stat-unit">{{ s.unit }}</span>
+              </div>
             </div>
             <span class="stat-label">{{ s.label }}</span>
           </div>
@@ -86,10 +106,16 @@
       {% for f in dosage_form_cards %}
       <div class="col-6 col-md-4 col-lg-3">
         <a href="/products?form={{ f.name }}" class="form-card">
-          <!-- 剂型图片：未上传时显示纯色PNG占位图，悬停变虚并弹出剂型名称 -->
-          <div class="ph {{ form_colors[loop.index0 % 8] }} form-ph">
+          <!-- 剂型图片：有上传时直接用图片，无上传时显示色块占位 -->
+          {% if f.image %}
+          <div class="form-img-wrap">
             <img src="{{ img_url(f.image, 'form', form_colors[loop.index0 % 8]) }}" alt="{{ f.name }}">
           </div>
+          {% else %}
+          <div class="ph {{ form_colors[loop.index0 % 8] }} form-ph">
+            <span class="ph-tag">{{ f.name }} · 待上传</span>
+          </div>
+          {% endif %}
           <div class="form-overlay">
             <span class="form-name">{{ f.name }}</span>
             <span class="form-desc">{{ f.description }}</span>
@@ -167,7 +193,11 @@
       {% for e in enterprise_cards %}
       <div class="col-sm-6 col-lg-3">
         <a href="{{ e.link }}" class="corp-card rise">
-          <div class="ph {{ e.color }} corp-ph"><img src="{{ img_url(e.image, 'corp', e.color) }}" alt="{{ e.title }}"></div>
+          {% if e.image %}
+          <div class="corp-img-wrap"><img src="{{ img_url(e.image, 'corp', e.color) }}" alt="{{ e.title }}"></div>
+          {% else %}
+          <div class="ph {{ e.color }} corp-ph"><span class="ph-tag">{{ e.title }}</span></div>
+          {% endif %}
           <div class="corp-info"><h4>{{ e.title }}</h4><p>{{ e.description }}</p></div>
         </a>
       </div>
@@ -181,9 +211,9 @@
 {% block extra_css %}
 <style>
 /* ---- Banner ---- */
-.banner-ph { height: 560px; position: relative; overflow: hidden; }
+.banner-ph { height: 750px; position: relative; overflow: hidden; }
 .banner-ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.banner-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,28,22,.78) 0%, rgba(8,28,22,.40) 55%, rgba(8,28,22,.55) 100%); }
+.banner-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%); }
 .banner-caption { position: relative; z-index: 2; color: #fff; max-width: 620px; padding: 0 1rem; }
 .banner-kicker { display: inline-block; font-size: .8rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .35rem 1.1rem; margin-bottom: 1.3rem; }
 .banner-caption h2 { font-size: clamp(2rem, 4.4vw, 3.2rem); font-weight: 900; line-height: 1.28; margin-bottom: 1rem; }
@@ -202,36 +232,104 @@
 .shadow-bq { box-shadow: var(--bq-shadow-lg); }
 .sec-kicker.not-center::before { display: none; }
 
-.stat-row { display: flex; gap: 2.2rem; margin-top: 2.2rem; flex-wrap: wrap; }
+/* ---- 现代化数据圆环：SVG 进度环 + 大数字 + 微光，居中 ---- */
+.stat-row {
+  display: flex; justify-content: center; align-items: center;
+  gap: 2.8rem; margin-top: 2.5rem; flex-wrap: wrap;
+  width: 100%;
+}
+.stat-row-center { text-align: center; }
 .stat-circle { text-align: center; }
 .stat-ring {
-  width: 118px; height: 118px; border-radius: 50%;
-  border: 4px solid var(--bq-green-2);
-  background: radial-gradient(circle at 30% 25%, rgba(30,107,83,.12), transparent 60%), #fff;
-  display: flex; align-items: baseline; justify-content: center;
-  padding-top: 34px; position: relative;
-  box-shadow: 0 8px 24px rgba(20,81,63,.14);
-  transition: transform .3s;
+  width: 130px; height: 130px; border-radius: 50%;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  box-shadow:
+    0 8px 28px rgba(230,33,41,.15),
+    0 0 0 4px rgba(255,255,255,.9) inset;
+  transition: transform .35s cubic-bezier(.2,.8,.3,1), box-shadow .35s;
 }
-.stat-ring::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; border: 1px dashed var(--bq-green-soft); }
-.stat-ring.ring-gold { border-color: var(--bq-gold); background: radial-gradient(circle at 30% 25%, rgba(185,137,61,.14), transparent 60%), #fff; }
-.stat-circle:hover .stat-ring { transform: translateY(-6px); }
-.stat-num { font-family: "Noto Serif SC", serif; font-size: 2.1rem; font-weight: 900; color: var(--bq-green); line-height: 1; }
-.ring-gold .stat-num { color: var(--bq-gold); }
-.stat-unit { font-size: .8rem; color: var(--bq-gray); margin-left: 2px; }
-.stat-label { display: block; margin-top: .6rem; font-size: .86rem; font-weight: 500; color: var(--bq-ink); }
+.stat-ring::before {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%;
+  background: conic-gradient(from 90deg, var(--bq-red) 0deg, var(--bq-red) 0deg, transparent 0deg);
+  z-index: -1; opacity: .14; filter: blur(8px);
+}
+.stat-ring.ring-teal::before {
+  background: conic-gradient(from 90deg, var(--bq-teal) 0deg, var(--bq-teal) 0deg, transparent 0deg);
+}
+.stat-circle:hover .stat-ring {
+  transform: translateY(-8px) scale(1.04);
+  box-shadow: 0 18px 40px rgba(230,33,41,.22), 0 0 0 4px rgba(255,255,255,.9) inset;
+}
 
-/* ---- 剂型矩阵：悬停图片变虚、弹出剂型名 ---- */
-.form-card { display: block; position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow); }
-.form-ph { height: 210px; transition: filter .35s, transform .35s; }
+/* SVG 圆环 */
+.stat-ring-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.stat-track {
+  fill: none; stroke: rgba(230,33,41,.10);
+  stroke-width: 3; stroke-linecap: round;
+}
+.stat-bar {
+  fill: none; stroke-width: 6; stroke-linecap: round;
+  stroke-dasharray: 314.159;       /* 2π × 50 */
+  stroke-dashoffset: 314.159;      /* 完全隐藏，由 JS 控制 */
+  transition: stroke-dashoffset 1.6s cubic-bezier(.2,.8,.3,1);
+  filter: drop-shadow(0 0 6px rgba(230,33,41,.5));
+}
+.stat-ring.ring-teal .stat-bar {
+  filter: drop-shadow(0 0 6px rgba(26,111,117,.5));
+}
+.stat-ring.ring-teal .stat-track { stroke: rgba(26,111,117,.10); }
+
+/* 圆环中心：数字 + 单位 */
+.stat-text {
+  position: relative; z-index: 2;
+  display: flex; align-items: baseline; justify-content: center;
+  line-height: 1;
+}
+.stat-num {
+  font-family: "Noto Serif SC", serif;
+  font-size: 2.3rem; font-weight: 900;
+  color: var(--bq-red); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-ring.ring-teal .stat-num { color: var(--bq-teal); }
+.stat-unit {
+  font-size: .82rem; color: var(--bq-gray);
+  margin-left: 3px; font-weight: 600;
+}
+.stat-label {
+  display: block; margin-top: .8rem;
+  font-size: .88rem; font-weight: 600; color: var(--bq-ink);
+  letter-spacing: .04em;
+}
+
+@media (max-width: 575.98px) {
+  .stat-row { gap: 1.4rem; }
+  .stat-ring { width: 108px; height: 108px; }
+  .stat-num { font-size: 1.9rem; }
+}
+
+/* ---- 剂型矩阵：悬停图片变虚，弹出剂型名 ---- */
+.form-card { display: block; position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow); aspect-ratio: 4 / 5; }
+.form-img-wrap, .form-ph {
+  position: absolute; inset: 0;
+  transition: filter .35s, transform .35s;
+}
+.form-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; background: transparent; }
+.form-card:hover .form-img-wrap, .form-card:hover .form-ph { filter: blur(5px) opacity(.45); transform: scale(1.05); }
 .form-overlay {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: .45rem;
-  background: linear-gradient(160deg, rgba(20,81,63,.88), rgba(20,81,63,.72));
+  background: linear-gradient(160deg, rgba(154,14,20,.88), rgba(154,14,20,.72));
   color: #fff; opacity: 0; transition: opacity .35s; backdrop-filter: blur(2px);
   padding: 1rem; text-align: center;
 }
-.form-card:hover .form-ph { filter: blur(5px) opacity(.45); transform: scale(1.05); }
+.form-card:hover .form-ph,
+.form-card:hover .form-img-wrap { filter: blur(5px) opacity(.45); transform: scale(1.05); }
 .form-card:hover .form-overlay { opacity: 1; }
 .form-name { font-family: "Noto Serif SC", serif; font-size: 1.5rem; font-weight: 900; }
 .form-desc { font-size: .8rem; color: rgba(255,255,255,.8); letter-spacing: .08em; }
@@ -245,7 +343,7 @@
 .nf-media { position: absolute; inset: 0; }
 .nf-watermark { position: absolute; right: 1.4rem; bottom: .6rem; font-size: 8rem; font-weight: 900; color: rgba(255,255,255,.10); line-height: 1; pointer-events: none; }
 .nf-imgtip { position: absolute; top: 1.1rem; right: 1.3rem; font-size: .68rem; letter-spacing: .2em; color: rgba(255,255,255,.55); }
-.nf-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 3rem 2rem 2rem; background: linear-gradient(to top, rgba(8,28,22,.95) 8%, rgba(8,28,22,.6) 52%, transparent); color: #fff; }
+.nf-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 3rem 2rem 2rem; background: linear-gradient(to top, rgba(60,12,14,.95) 8%, rgba(60,12,14,.6) 52%, transparent); color: #fff; }
 .nf-cat { display: inline-block; font-size: .72rem; font-weight: 700; color: #fff; background: var(--bq-gold); border-radius: 999px; padding: .22rem .8rem; letter-spacing: .08em; }
 .nf-title { font-family: "Noto Serif SC", serif; font-size: clamp(1.2rem, 2.1vw, 1.55rem); font-weight: 900; line-height: 1.48; margin: .7rem 0 .55rem; }
 .nf-excerpt { font-size: .86rem; color: rgba(255,255,255,.78); line-height: 1.75; margin: 0 0 .9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -257,18 +355,18 @@
 @keyframes nfbar { from { width: 0; } to { width: 100%; } }
 
 .news-side { display: flex; flex-direction: column; border: 1px solid var(--bq-line); border-radius: var(--bq-radius); background: #fff; overflow: hidden; box-shadow: var(--bq-shadow); }
-.ns-head { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.4rem; background: linear-gradient(135deg, var(--bq-green), var(--bq-green-2)); color: #fff; font-weight: 700; letter-spacing: .08em; font-size: .9rem; }
+.ns-head { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.4rem; background: linear-gradient(135deg, var(--bq-red), var(--bq-red-2)); color: #fff; font-weight: 700; letter-spacing: .08em; font-size: .9rem; }
 .ns-more { color: rgba(255,255,255,.78); font-size: .78rem; font-weight: 400; }
 .ns-more:hover { color: #e6c47c; }
 .ns-item { flex: 1; display: flex; gap: .95rem; align-items: center; padding: .85rem 1.4rem; border-bottom: 1px solid var(--bq-line); border-left: 3px solid transparent; transition: background .25s, border-color .25s; }
 .ns-item:last-child { border-bottom: none; }
 .ns-num { font-size: 1.5rem; font-weight: 900; color: #cdd8d2; line-height: 1; font-variant-numeric: tabular-nums; transition: color .25s; flex: none; }
 .ns-item.on .ns-num { color: var(--bq-gold); }
-.ns-item.on { background: var(--bq-green-soft); border-left-color: var(--bq-gold); }
-.ns-item:hover { background: var(--bq-green-soft); }
+.ns-item.on { background: var(--bq-red-soft); border-left-color: var(--bq-gold); }
+.ns-item:hover { background: var(--bq-red-soft); }
 .ns-body { min-width: 0; }
 .ns-title { display: block; font-size: .9rem; font-weight: 600; color: var(--bq-ink); line-height: 1.55; margin-bottom: .25rem; transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ns-item.on .ns-title { color: var(--bq-green); }
+.ns-item.on .ns-title { color: var(--bq-red); }
 .ns-meta { font-size: .72rem; color: var(--bq-gray); }
 
 @media (max-width: 991.98px) {
@@ -284,14 +382,22 @@
 }
 
 /* ---- 企业相关卡片 ---- */
-.corp-card { display: block; border-radius: var(--bq-radius); overflow: hidden; background: #fff; box-shadow: var(--bq-shadow); transition: transform .3s, box-shadow .3s; }
+.corp-card {
+  display: block; border-radius: var(--bq-radius); overflow: hidden;
+  background: #fff; box-shadow: var(--bq-shadow);
+  transition: transform .35s, box-shadow .35s;
+  aspect-ratio: 4 / 7;
+}
 .corp-card:hover { transform: translateY(-8px); box-shadow: var(--bq-shadow-lg); }
-.corp-ph { height: 200px; }
+.corp-ph, .corp-img-wrap { position: relative; height: auto; min-height: 260px; }
+.corp-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
+.corp-img-wrap, .corp-ph { aspect-ratio: 4 / 5; }
 .corp-info { padding: 1.15rem 1.3rem 1.3rem; }
-.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.05rem; font-weight: 700; color: var(--bq-green); margin-bottom: .3rem; }
+.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.05rem; font-weight: 700; color: var(--bq-red); margin-bottom: .3rem; }
 .corp-info p { font-size: .83rem; color: var(--bq-gray); margin: 0; }
 
-@media (max-width: 767.98px) { .banner-ph { height: 420px; } .factory-ph { height: 260px; } }
+@media (max-width: 991.98px) { .banner-ph { height: 560px; } .factory-ph { height: 320px; } }
+@media (max-width: 767.98px) { .banner-ph { height: 460px; } .factory-ph { height: 260px; } }
 </style>
 {% endblock %}
 

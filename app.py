@@ -137,8 +137,8 @@ def create_app():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = app.config.get("SESSION_COOKIE_SAMESITE") or "Lax"
     app.config["SESSION_COOKIE_SECURE"] = is_prod
-    # session 寿命保持默认（浏览器关闭即过期），避免永久会话风险
-    app.config["PERMANENT_SESSION_LIFETIME"] = None
+    # session 寿命保持 Flask 默认（timedelta(days=31)）。
+    # 注意：如果想「关闭浏览器即退出」，那么在登录时不要调 session.permanent = True 即可。
 
     db.init_app(app)
 
