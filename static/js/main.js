@@ -1,6 +1,8 @@
 /* 邦琪药业官网 - 全局脚本 */
 document.addEventListener("DOMContentLoaded", function () {
-  /* 数字递增动画 + 朱红 SVG 进度环同步（pathLength=100，描边偏移 100→0） */
+  /* 数字递增动画 + 朱红 SVG 进度环同步（pathLength=100，描边偏移 100→0）
+     v1.1 主页会用 IntersectionObserver（其他页通用）。v1.1 主页改用 Swiper，
+     因此把 animateCounter 暴露到 window.bqAnimateCounter 供主页脚本在 slideChange 时手动调用。 */
   function animateCounter(el) {
     const target = parseInt(el.dataset.target, 10) || 0;
     const duration = 1600;
@@ -17,6 +19,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     requestAnimationFrame(tick);
   }
+  // 暴露给 v1.1 主页脚本在 slideChange 时手动调用（避免与 Swiper 冲突）
+  window.bqAnimateCounter = animateCounter;
 
   const counters = document.querySelectorAll(".stat-num[data-target]");
   if ("IntersectionObserver" in window) {
@@ -26,6 +30,8 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }, { threshold: 0.4 });
     counters.forEach((el) => co.observe(el));
+    // 暴露到 window，v1.1 主页可在 Swiper init 时 disconnect（避免与 Swiper 动画时序冲突）
+    window.bqCountersObserver = co;
   } else {
     counters.forEach(animateCounter);
   }
