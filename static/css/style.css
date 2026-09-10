@@ -83,8 +83,16 @@ a:hover { color: var(--bq-gold); }
 .ph-gold { background: linear-gradient(135deg, #9a7130, var(--bq-gold)); }
 
 /* ---------- 顶部信息条 ---------- */
-.topbar { background: var(--bq-red); color: rgba(255,255,255,.85); font-size: .78rem; padding: .4rem 0; }
-.topbar-text { display: inline-flex; align-items: center; gap: .4rem; }
+.topbar {
+  background: var(--bq-red);
+  color: rgba(255,255,255,.95);
+  font-size: .78rem;
+  padding: .45rem 0;
+  display: block !important;
+  position: relative;
+  z-index: 200;
+}
+.topbar-text { display: inline-flex; align-items: center; gap: .4rem; color: rgba(255,255,255,.95); }
 
 /* ---------- 导航栏 ---------- */
 .site-nav {

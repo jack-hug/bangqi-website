@@ -1,36 +1,16 @@
 /* 邦琪药业官网 - 全局脚本 */
 document.addEventListener("DOMContentLoaded", function () {
-  /* 数字圆环 + SVG 进度环同步动画 */
+  /* 数字递增动画（仅数字，方块卡无 SVG 进度环） */
   function animateCounter(el) {
     const target = parseInt(el.dataset.target, 10) || 0;
     const duration = 1600;
     const start = performance.now();
-    const ring = el.closest(".stat-ring")?.querySelector(".stat-bar");
-    /* 进度：取当前 3 个 stat 中最大值做归一化，让进度环视觉对比均匀 */
-    let ringMax = 100;
-    if (ring && ring.dataset.target) {
-      const all = Array.from(document.querySelectorAll(".stat-bar")).map((b) => parseInt(b.dataset.target, 10) || 0);
-      ringMax = Math.max(100, ...all);
-    }
     function tick(now) {
       const p = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - p, 3);
       const val = Math.round(target * eased);
       el.textContent = val.toLocaleString("en-US");
-      if (ring && p < 1) {
-        const C = 2 * Math.PI * 50;
-        const offset = C * (1 - (target * eased) / ringMax);
-        ring.style.strokeDashoffset = offset;
-      } else if (ring) {
-        const C = 2 * Math.PI * 50;
-        ring.style.strokeDashoffset = C * (1 - target / ringMax);
-      }
       if (p < 1) requestAnimationFrame(tick);
-    }
-    /* 进度环起始态 */
-    if (ring) {
-      const C = 2 * Math.PI * 50;
-      ring.style.strokeDashoffset = C;
     }
     requestAnimationFrame(tick);
   }

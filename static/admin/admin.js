@@ -23,7 +23,7 @@ const RESOURCES = {
       {k: "subtitle", l: "副标题", t: "text"},
       {k: "btn_text", l: "按钮文字", t: "text"},
       {k: "btn_link", l: "按钮链接", t: "text"},
-      {k: "image", l: "Banner图片（1920×640）", t: "image"},
+      {k: "image", l: "Banner图片（1920×750）", t: "image"},
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
       {k: "sort_order", l: "排序", t: "number", def: 0},
       {k: "is_active", l: "启用", t: "checkbox", def: true},
@@ -58,7 +58,7 @@ const RESOURCES = {
       {k: "title", l: "卡片标题", t: "text"},
       {k: "description", l: "描述文字", t: "text"},
       {k: "link", l: "跳转链接", t: "text"},
-      {k: "image", l: "卡片图片（480×300）", t: "image"},
+      {k: "image", l: "卡片图片（370×650）", t: "image"},
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
       {k: "sort_order", l: "排序", t: "number", def: 0},
     ],
@@ -69,7 +69,7 @@ const RESOURCES = {
     fields: [
       {k: "name", l: "剂型名称", t: "text"},
       {k: "description", l: "剂型简介", t: "text"},
-      {k: "image", l: "剂型图片（480×300）", t: "image"},
+      {k: "image", l: "剂型图片（480×600）", t: "image"},
       {k: "sort_order", l: "排序", t: "number", def: 0},
     ],
     cols: ["name", "description", "image", "sort_order"],
@@ -975,8 +975,9 @@ function buildImageField(key, label, val) {
       <span class="img-preview-tip ${val ? "d-none" : ""}">尚未上传图片<br><span style="font-size:.74rem;color:#909399;">支持 PNG / JPG / GIF / WEBP，最大 8MB</span></span>
     </div>
     <div class="img-actions">
-      <label class="btn-img-upload">📁 选择图片上传<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onchange="handleImgUpload(this, '${key}')"></label>
-      <button type="button" class="btn-img-clear" onclick="clearImgField('${key}')">移除图片</button>
+      <button type="button" class="btn btn-primary" onclick="this.nextElementSibling.click()">📁 选择图片上传</button>
+      <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onchange="handleImgUpload(this, '${key}')">
+      <button type="button" class="btn btn-light" onclick="clearImgField('${key}')">移除图片</button>
     </div>
   </div>`;
 }

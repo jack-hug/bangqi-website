@@ -57,32 +57,12 @@
         <div class="sec-kicker not-center">ABOUT US</div>
         <h2 class="sec-title text-start">三十余载·只为放心好药</h2>
         <p class="intro-text">{{ COMPANY.intro }}</p>
-        <!-- 三个数据圆环（数据库驱动，数字动态跳跃生成） -->
-        <!-- 现代化设计：SVG 进度环 + 大数字 + 微光点，居中 -->
+        <!-- 三个数据卡（数据库驱动，数字动态跳跃生成；统一方块 + 5px 碧青 border） -->
         <div class="stat-row stat-row-center">
           {% for s in home_stats %}
           <div class="stat-circle">
-            <div class="stat-ring {{ 'ring-teal' if loop.index == 2 }}">
-              <svg class="stat-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
-                <defs>
-                  <linearGradient id="ringGrad{{ loop.index }}" x1="0%" y1="0%" x2="100%" y2="100%">
-                    {% if loop.index == 2 %}
-                      <stop offset="0%" stop-color="#1A6F75"/>
-                      <stop offset="100%" stop-color="#4FA3A8"/>
-                    {% else %}
-                      <stop offset="0%" stop-color="#E62129"/>
-                      <stop offset="100%" stop-color="#FF444F"/>
-                    {% endif %}
-                  </linearGradient>
-                </defs>
-                <circle class="stat-track" cx="60" cy="60" r="50" />
-                <circle class="stat-bar" cx="60" cy="60" r="50"
-                        stroke="url(#ringGrad{{ loop.index }})"
-                        data-target="{{ s.value }}" />
-              </svg>
-              <div class="stat-text">
-                <span class="stat-num" data-target="{{ s.value }}">0</span><span class="stat-unit">{{ s.unit }}</span>
-              </div>
+            <div class="stat-card">
+              <span class="stat-num" data-target="{{ s.value }}">0</span><span class="stat-unit">{{ s.unit }}</span>
             </div>
             <span class="stat-label">{{ s.label }}</span>
           </div>
@@ -232,85 +212,46 @@
 .shadow-bq { box-shadow: var(--bq-shadow-lg); }
 .sec-kicker.not-center::before { display: none; }
 
-/* ---- 现代化数据圆环：SVG 进度环 + 大数字 + 微光，居中 ---- */
+/* ---- 现代化数据卡：统一白底方块 + 5px 碧青 border + 大数字，居中 ---- */
 .stat-row {
-  display: flex; justify-content: center; align-items: center;
-  gap: 2.8rem; margin-top: 2.5rem; flex-wrap: wrap;
+  display: flex; justify-content: center; align-items: stretch;
+  gap: 1.8rem; margin-top: 2rem; flex-wrap: wrap;
   width: 100%;
 }
 .stat-row-center { text-align: center; }
-.stat-circle { text-align: center; }
-.stat-ring {
-  width: 130px; height: 130px; border-radius: 50%;
+.stat-circle { text-align: center; display: flex; flex-direction: column; align-items: center; gap: .7rem; }
+.stat-card {
   background: #fff;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-  box-shadow:
-    0 8px 28px rgba(230,33,41,.15),
-    0 0 0 4px rgba(255,255,255,.9) inset;
+  border: 5px solid var(--bq-teal);
+  border-radius: var(--bq-radius);
+  padding: 1.1rem 1.6rem;
+  min-width: 130px;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
   transition: transform .35s cubic-bezier(.2,.8,.3,1), box-shadow .35s;
 }
-.stat-ring::before {
-  content: ""; position: absolute; inset: -6px; border-radius: 50%;
-  background: conic-gradient(from 90deg, var(--bq-red) 0deg, var(--bq-red) 0deg, transparent 0deg);
-  z-index: -1; opacity: .14; filter: blur(8px);
-}
-.stat-ring.ring-teal::before {
-  background: conic-gradient(from 90deg, var(--bq-teal) 0deg, var(--bq-teal) 0deg, transparent 0deg);
-}
-.stat-circle:hover .stat-ring {
-  transform: translateY(-8px) scale(1.04);
-  box-shadow: 0 18px 40px rgba(230,33,41,.22), 0 0 0 4px rgba(255,255,255,.9) inset;
-}
-
-/* SVG 圆环 */
-.stat-ring-svg {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  transform: rotate(-90deg);
-}
-.stat-track {
-  fill: none; stroke: rgba(230,33,41,.10);
-  stroke-width: 3; stroke-linecap: round;
-}
-.stat-bar {
-  fill: none; stroke-width: 6; stroke-linecap: round;
-  stroke-dasharray: 314.159;       /* 2π × 50 */
-  stroke-dashoffset: 314.159;      /* 完全隐藏，由 JS 控制 */
-  transition: stroke-dashoffset 1.6s cubic-bezier(.2,.8,.3,1);
-  filter: drop-shadow(0 0 6px rgba(230,33,41,.5));
-}
-.stat-ring.ring-teal .stat-bar {
-  filter: drop-shadow(0 0 6px rgba(26,111,117,.5));
-}
-.stat-ring.ring-teal .stat-track { stroke: rgba(26,111,117,.10); }
-
-/* 圆环中心：数字 + 单位 */
-.stat-text {
-  position: relative; z-index: 2;
-  display: flex; align-items: baseline; justify-content: center;
-  line-height: 1;
+.stat-circle:hover .stat-card {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(26,111,117,.20);
 }
 .stat-num {
   font-family: "Noto Serif SC", serif;
-  font-size: 2.3rem; font-weight: 900;
-  color: var(--bq-red); line-height: 1;
+  font-size: 2.2rem; font-weight: 900;
+  color: var(--bq-teal); line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.stat-ring.ring-teal .stat-num { color: var(--bq-teal); }
 .stat-unit {
   font-size: .82rem; color: var(--bq-gray);
-  margin-left: 3px; font-weight: 600;
+  font-weight: 600;
 }
 .stat-label {
-  display: block; margin-top: .8rem;
   font-size: .88rem; font-weight: 600; color: var(--bq-ink);
   letter-spacing: .04em;
 }
 
 @media (max-width: 575.98px) {
-  .stat-row { gap: 1.4rem; }
-  .stat-ring { width: 108px; height: 108px; }
-  .stat-num { font-size: 1.9rem; }
+  .stat-row { gap: 1rem; }
+  .stat-card { min-width: 110px; padding: .9rem 1.2rem; }
+  .stat-num { font-size: 1.8rem; }
 }
 
 /* ---- 剂型矩阵：悬停图片变虚，弹出剂型名 ---- */
@@ -381,17 +322,17 @@
   .ns-item { padding: .7rem 1rem; gap: .65rem; }
 }
 
-/* ---- 企业相关卡片 ---- */
+/* ---- 企业相关卡片（图片 370×650） ---- */
 .corp-card {
   display: block; border-radius: var(--bq-radius); overflow: hidden;
   background: #fff; box-shadow: var(--bq-shadow);
   transition: transform .35s, box-shadow .35s;
-  aspect-ratio: 4 / 7;
+  aspect-ratio: 37 / 65;
 }
 .corp-card:hover { transform: translateY(-8px); box-shadow: var(--bq-shadow-lg); }
 .corp-ph, .corp-img-wrap { position: relative; height: auto; min-height: 260px; }
 .corp-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
-.corp-img-wrap, .corp-ph { aspect-ratio: 4 / 5; }
+.corp-img-wrap, .corp-ph { aspect-ratio: 37 / 48; }
 .corp-info { padding: 1.15rem 1.3rem 1.3rem; }
 .corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.05rem; font-weight: 700; color: var(--bq-red); margin-bottom: .3rem; }
 .corp-info p { font-size: .83rem; color: var(--bq-gray); margin: 0; }
