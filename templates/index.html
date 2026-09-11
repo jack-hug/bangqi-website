@@ -158,23 +158,17 @@ body.home-v1 #site-nav {
 .banner-ph { position: relative; overflow: hidden; }
 
 /* ------------------------------------------------------------------
-   Banner 动态层：图片 + 遮罩各自独立成层，由 JS 用 WAAPI 分别驱动。
-   分层的原因：
-   1) 图片单独承担「缓慢巡航」的缩放 + 摇移，遮罩不跟着缩放，
-      否则遮罩渐变会一起被拉伸，画面明暗关系会漂移；
-   2) 遮罩单独做明暗推移，让静态素材也产生「光线在变」的生命感，
-      这是单一缩放给不了的层次；
-   3) 文案层完全静止 —— 文字跟着缩放会糊，动图不动字才显高级。
+   Banner 图层：图片 + 遮罩各自独立成层。
+   图片层不再做任何缩放动画（方案已弃用图片缩放），只保留静态铺满，
+   object-fit: cover 保证任何比例下都填满容器、不露边缘。
    ------------------------------------------------------------------ */
 .banner-ph > img {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
-  /* 基础 scale 略大于 1，为位移留出余量 —— 巡航过程中任何时刻
-     都不会因为图片被移开而露出容器边缘的空白 */
-  transform: scale(1.06);
+  /* 保留 1.02 的极轻微余量，避免亚像素取整时边缘出现 1px 缝隙 */
+  transform: scale(1.02);
   transform-origin: center center;
-  will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -182,7 +176,6 @@ body.home-v1 #site-nav {
   position: absolute; inset: 0;
   z-index: 1;
   background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%);
-  will-change: opacity;
 }
 .banner-caption { position: relative; z-index: 2; color: #fff; max-width: 760px; padding: 0 1rem; }
 .banner-kicker { display: inline-block; font-size: .95rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .45rem 1.4rem; margin-bottom: 1.6rem; }
@@ -193,15 +186,14 @@ body.home-v1 #site-nav {
 /* banner 下方的长条分页器已按要求移除 */
 #homeBanner .carousel-indicators { display: none !important; }
 /* ------------------------------------------------------------------
-   切换过渡：推移 + 视差
-   新图从下往上推入，旧图同时反向慢移（视差）。方向与整站「向下滚动翻页」
-   的纵向语言一致，切换时形成统一的叙事感，而不是单纯的交叉淡入。
+   切换过渡：推移 + 视差（图片缩放已弃用，只保留位移）
+   新图从右往左推入并淡入，旧图反向向右慢移 4% 并淡出，形成视差纵深。
    由 JS 用 WAAPI 驱动，关闭 Bootstrap 自带的 opacity 过渡以免互相打架。
    ------------------------------------------------------------------ */
 .home-slide-banner .carousel-fade .carousel-item {
   transition: none;
 }
-/* 过渡期间旧图整层轻微上移，与新图的推入形成视差纵深 */
+/* 旧图在下层、新图在上层，形成层叠推入的纵深感 */
 .home-slide-banner .carousel-item.bq-leaving {
   z-index: 1;
 }
@@ -791,7 +783,24 @@ document.addEventListener("DOMContentLoaded", function () {
     return "translateY(40px)";
   }
 
-  function triggerSlide(slide) {
+  /* 把某屏内所有 .slide-enter 元素「瞬间」摆回初始位置（不可见态）。
+     ★ 必须在版块「开始滑入之前」调用，否则用户会先看到内容在原位、
+       然后突然被弹回起点再滑进来 —— 这正是之前「二次进入时先在原位
+       又弹一次」的根因。 */
+  function resetSlide(slide) {
+    if (!slide) return;
+    slide.querySelectorAll(".slide-enter").forEach(function (e) {
+      if (e._bqAnim) { try { e._bqAnim.cancel(); } catch (err) {} e._bqAnim = null; }
+      e.style.transition = "none";
+      e.style.opacity = "0";
+      e.style.transform = initialTransform(e);
+    });
+    // 强制样式计算，让初始态立即生效（此时该屏还没滑入，用户看不到这一帧）
+    void slide.offsetHeight;
+  }
+
+  /* 播放某屏的弹入动画。每次都用全新的 animation 实例 → 必定重播。 */
+  function playSlide(slide) {
     if (!slide) return 0;
     var enters = Array.prototype.slice.call(slide.querySelectorAll(".slide-enter"));
     var maxDelay = 0;
@@ -801,19 +810,16 @@ document.addEventListener("DOMContentLoaded", function () {
       var delay = s * 0.18;
       if (delay > maxDelay) maxDelay = delay;
 
-      // 取消该元素上尚未播完的旧动画，避免叠加
       if (e._bqAnim) { try { e._bqAnim.cancel(); } catch (err) {} }
 
-      // 先把元素摆回初始静止态（内联样式优先，不会被 CSS 抢回）
+      // 兜底：确保初始态已就位（resetSlide 已设过则这里是幂等的）
       e.style.transition = "none";
       e.style.opacity = "0";
       e.style.transform = initialTransform(e);
     });
 
-    // 强制一次样式计算，确保初始态被浏览器接收
     void slide.offsetHeight;
 
-    // 用 WAAPI 播放；每次都是全新动画实例 → 必定重播
     enters.forEach(function (e) {
       var s = parseInt(e.dataset.stagger || 0, 10);
       var anim = e.animate(
@@ -834,6 +840,7 @@ document.addEventListener("DOMContentLoaded", function () {
         e.style.transition = "";
         e.style.opacity = "";
         e.style.transform = "";
+        e._bqAnim = null;
       };
     });
 
@@ -856,105 +863,17 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* ------------------------------------------------------------------
-     问题 4：banner Ken Burns 缓慢缩放
-     关键修复：
-     1) 切换时先清掉「所有」banner 图片的动画（含上一张已 forwards 锁定的），
-        否则新旧两张同时动 → 视觉上「放大再缩小」
-     2) 用 WAAPI 播放而非 CSS animation + forwards，避免「还原再重放」
-        这类不可靠的重启行为
+     Banner 过渡参数
+     ★ 图片缩放（Ken Burns / 缓慢巡航）已整体弃用 —— 用户反馈缩放效果
+       始终难以做到理想（切换时交叉淡入阶段容易出现「放大再缩小」的观感）。
+       现在只保留「推移 + 视差」这一层纯粹的位移过渡，视觉更干净可控。
      ------------------------------------------------------------------ */
-  /* ------------------------------------------------------------------
-     Banner 动态：缓慢巡航（慢速推近 + 横向摇移 + 明暗推移）
-     ------------------------------------------------------------------
-     与旧实现（单纯 scale 1 → 1.12，9.5s ease-out 后停住）的区别：
-     · 时长刻意长于切换间隔 → 画面被切走时仍在运动中，永不停顿，
-       交接更自然，也避免「推完了干等着」的呆滞感
-     · 叠加横向摇移 → 有方向感，不再只是向心推近（那样画面显平）
-     · 遮罩层独立做明暗推移 → 静态素材也产生「光线在变」的生命感
-     · 四张图使用不同的时长与位移方向 → 打破「模板在重复同一个动作」的观感，
-       这是消除机械感最有效的一招
-     ------------------------------------------------------------------ */
-  var CRUISE = [
-    { dur: 17000, zoom: 1.20, dx: -2.6, dy: -1.4 },  // 推近向左上
-    { dur: 15000, zoom: 1.16, dx:  2.4, dy: -1.8 },  // 推近向右上
-    { dur: 19000, zoom: 1.22, dx: -2.0, dy:  1.6 },  // 推近向左下
-    { dur: 16000, zoom: 1.17, dx:  2.8, dy:  1.2 }   // 推近向右下
-  ];
-  var SHADE_MIN = 0.72;      // 遮罩明暗推移的最暗系数
-  var PARALLAX_MS = 1200;    // 推移过渡时长
+  var PARALLAX_MS = 1200;                        // 推移过渡时长
   var PARALLAX_EASE = "cubic-bezier(.4,0,.2,1)";
+  var PARALLAX_SHIFT = 4;                        // 旧图反向平移量（%）
 
-  /* 取消某个动画层上的所有动画并清除内联残留 */
-  function killAnims(node) {
-    if (!node) return;
-    (node._bqAnims || []).forEach(function (a) { try { a.cancel(); } catch (e) {} });
-    node._bqAnims = [];
-    node.style.transform = "";
-    node.style.opacity = "";
-  }
-
-  /* 停止某张 banner 图上所有动态（图片巡航 + 遮罩明暗） */
-  function stopCruise(item) {
-    if (!item) return;
-    killAnims(item.querySelector(".banner-ph > img"));
-    killAnims(item.querySelector(".banner-shade"));
-  }
-
-  /* 清掉整个 banner 里所有图的动态（切换开始前调用，避免新旧两张同时跑） */
-  function stopAllCruise(bannerEl) {
-    if (!bannerEl) return;
-    bannerEl.querySelectorAll(".carousel-item").forEach(stopCruise);
-  }
-
-  /* 按索引取巡航参数：图不够 4 张时循环取用，保证错落感。
-     ★ 注意 bannerEl 必须由调用方传入 —— 不能依赖闭包里的同名变量 */
-  function cruiseOf(bannerEl, item) {
-    var items = bannerEl ? bannerEl.querySelectorAll(".carousel-item") : [];
-    var i = Array.prototype.indexOf.call(items, item);
-    if (i < 0) i = 0;
-    return CRUISE[i % CRUISE.length];
-  }
-
-  /* 给一张图启动缓慢巡航 */
-  function startCruise(bannerEl, item) {
-    if (!item) return;
-    var cfg = cruiseOf(bannerEl, item);
-    var img = item.querySelector(".banner-ph > img");
-    var shade = item.querySelector(".banner-shade");
-
-    if (img) {
-      killAnims(img);
-      img._bqAnims = [img.animate(
-        [
-          { transform: "scale(1.06) translate(0, 0)" },
-          { transform: "scale(" + cfg.zoom + ") translate(" + cfg.dx + "%, " + cfg.dy + "%)" }
-        ],
-        { duration: cfg.dur, easing: "cubic-bezier(.25,.1,.25,1)", fill: "forwards" }
-      )];
-    }
-
-    if (shade) {
-      killAnims(shade);
-      // 明暗推移：周期取巡航时长的一部分，循环往复，与缩放节奏错开
-      shade._bqAnims = [shade.animate(
-        [
-          { opacity: 1 },
-          { opacity: SHADE_MIN },
-          { opacity: 1 }
-        ],
-        {
-          duration: Math.round(cfg.dur * 0.68),
-          easing: "ease-in-out",
-          fill: "forwards",
-          iterations: Infinity,
-          direction: "alternate"
-        }
-      )];
-    }
-  }
-
-  /* 切换过渡：新图推移入场 + 旧图反向视差退出
-     两套动画都在 .carousel-item 外层容器上，与内层 <img> 的巡航互不干扰。 */
+  /* 切换过渡：新图从右往左推入并淡入 + 旧图反向向右慢移并淡出
+     两套动画都作用在 .carousel-item 外层容器上。 */
   function transitionBanner(bannerEl, next, prev) {
     if (!bannerEl || !next) return;
     if (prev === next) return;
@@ -962,21 +881,21 @@ document.addEventListener("DOMContentLoaded", function () {
     if (prev) prev.classList.add("bq-leaving");
     next.classList.add("bq-entering");
 
-    // 新图：从下往上推入，同时淡入（Bootstrap 的 fade 过渡已在 CSS 中关闭）
+    // 新图：从右往左推入，同时淡入（Bootstrap 的 fade 过渡已在 CSS 中关闭）
     next.animate(
       [
-        { transform: "translateY(100%)", opacity: 0 },
-        { transform: "translateY(0)", opacity: 1 }
+        { transform: "translateX(100%)", opacity: 0 },
+        { transform: "translateX(0)", opacity: 1 }
       ],
       { duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both" }
     );
 
-    // 旧图：反向向上慢移约 4% 并轻微放大，同时淡出，形成视差纵深
+    // 旧图：反向向右慢移 4% 并淡出，形成视差纵深
     if (prev) {
       var leaving = prev.animate(
         [
-          { transform: "translateY(0) scale(1)", opacity: 1 },
-          { transform: "translateY(-4%) scale(1.03)", opacity: 0 }
+          { transform: "translateX(0)", opacity: 1 },
+          { transform: "translateX(" + PARALLAX_SHIFT + "%)", opacity: 0 }
         ],
         { duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both" }
       );
@@ -993,8 +912,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function bindBanner(banner) {
     if (!banner) return;
-    // 首张立即开始巡航
-    startCruise(banner, banner.querySelector(".carousel-item.active"));
 
     /* ------------------------------------------------------------------
        ★ 切换动画：推移 + 视差
@@ -1006,25 +923,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
        正确做法是让 Bootstrap 完全按它自己的节奏走（它负责 .active 切换、
        计时器续期、事件派发），我们只在它切完之后，额外在新图上叠加一层
-       「推移入场」的 WAAPI 动画，在旧图上叠加一层「反向视差退出」。
-       两层动画作用的都是 .carousel-item 这个外层容器，
-       而巡航动画作用在内层的 <img> / .banner-shade 上，
-       两套动画层级不同，互不干扰。
+       「从右往左推入」，在旧图上叠加一层「反向向右慢移」的视差退出。
+       两层动画都作用在 .carousel-item 外层容器上，互不干扰。
 
        为了让推移可见，需要在 CSS 里关掉 carousel-fade 自带的 opacity 过渡，
        改由我们显式控制两层的不透明度。
        ------------------------------------------------------------------ */
-    banner.addEventListener("slide.bs.carousel", function (ev) {
-      // 切换一开始就停掉全部巡航，避免新旧两张的缩放同时跑
-      stopAllCruise(banner);
-    });
-
     banner.addEventListener("slid.bs.carousel", function (ev) {
       var next = ev.relatedTarget;
       var prev = window.bqPrevBannerItem;
       if (next) {
         transitionBanner(banner, next, prev);
-        startCruise(banner, next);
       }
       window.bqPrevBannerItem = next;
     });
@@ -1093,6 +1002,15 @@ document.addEventListener("DOMContentLoaded", function () {
     pagination: { el: ".swiper-pagination", clickable: true },
     a11y: { enabled: true },
     on: {
+      /* ★ 关键：在版块「开始滑入之前」就把内容置为不可见态。
+         这样用户看不到「内容已在原位又被弹回」的过程，
+         每次进入都等同于第一次：从不可见处弹入到原位。
+         beforeTransitionStart 比 slideChange 更早，且拿到的
+         activeIndex 已经是目标屏，正是我们需要的时机。 */
+      beforeTransitionStart: function () {
+        var s = this.slides[this.activeIndex];
+        if (s) resetSlide(s);
+      },
       init: function () {
         var s = this.slides[this.activeIndex];
         var key = s ? (s.dataset.slide || "") : "";
@@ -1102,9 +1020,10 @@ document.addEventListener("DOMContentLoaded", function () {
         measure();
         calcFormCardHeight();
         applyOffset(key === "banner" || key === "footer");
-        // 首屏：等一帧让布局稳定后再播放动画
+        // 首屏：先把内容置为不可见态，再等一帧播放
+        resetSlide(s);
         requestAnimationFrame(function () {
-          var md = triggerSlide(s);
+          var md = playSlide(s);
           if (key === "about") {
             setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
           }
@@ -1113,7 +1032,8 @@ document.addEventListener("DOMContentLoaded", function () {
       },
       slideChangeTransitionEnd: function () {
         var s = this.slides[this.activeIndex];
-        var md = triggerSlide(s);
+        // 此时该屏已滑入到位，只负责播放弹入（初始态已在 beforeTransitionStart 设好）
+        var md = playSlide(s);
         var key = s ? (s.dataset.slide || "") : "";
         // 三圆环只在首次进入 about 屏时播放
         if (key === "about") {
