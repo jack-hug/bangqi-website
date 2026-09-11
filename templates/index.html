@@ -16,26 +16,29 @@ body.home-v1 { overflow: hidden; background: #fff; }
 body.home-v1 #site-footer { display: none; }
 
 /* ---- topbar：固定顶部，用 max-height + opacity 过渡实现平滑显隐 ----
-   （display 无法过渡，所以用 max-height 收起） */
+   ★ 默认态 = 展开（首屏 banner 就要显示），避免刷新时「先消失再弹出」
+   收起由 JS 添加 .tb-hide 类触发 */
 body.home-v1 #site-topbar {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 70;
   overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
+  /* 默认展开 */
+  max-height: 60px;
+  opacity: 1;
+  padding-top: .45rem;
+  padding-bottom: .45rem;
   transition: max-height .45s cubic-bezier(.4,0,.2,1),
               opacity .32s ease,
               padding .45s cubic-bezier(.4,0,.2,1);
   will-change: max-height, opacity;
 }
-body.home-v1 #site-topbar.tb-show {
-  max-height: var(--tb-h);
-  opacity: 1;
-  padding-top: .45rem;
-  padding-bottom: .45rem;
+/* 收起态 */
+body.home-v1 #site-topbar.tb-hide {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 /* ---- 导航栏：固定顶部，top 跟随 topbar 展开/收起 ----
@@ -47,7 +50,8 @@ body.home-v1 #site-nav {
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.06);
   position: fixed !important;
-  top: 0;                    /* JS 在 topbar 展开时改为 var(--tb-h) */
+  /* 默认 topbar 展开 → nav 下移一个 topbar 高度 */
+  top: var(--tb-h, 34px);
   left: 0; right: 0;
   z-index: 65;
   transition: top .45s cubic-bezier(.4,0,.2,1),
@@ -57,7 +61,8 @@ body.home-v1 #site-nav {
 /* ============ Swiper 全屏容器（顶部避开 topbar + 导航栏） ============ */
 .home-swiper {
   position: fixed;
-  top: var(--nav-h);         /* JS 动态更新：nav 高度 + topbar 当前高度 */
+  /* 默认 topbar 展开 → 让开 topbar + nav */
+  top: calc(var(--tb-h, 34px) + var(--nav-h, 72px));
   left: 0; right: 0; bottom: 0;
   width: 100%;
   height: auto;
@@ -151,14 +156,11 @@ body.home-v1 #site-nav {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-/* 激活中的 banner 图片播放缓慢放大（Ken Burns），时长略长于轮播间隔以便全程连贯 */
-@keyframes bqKenBurns {
-  from { transform: scale(1); }
-  to   { transform: scale(1.12); }
-}
-.banner-ph > img.kb-run {
-  animation: bqKenBurns 9.5s ease-out forwards;
-}
+/* 激活中的 banner 图片由 JS 用 Web Animations API 播放缓慢放大（Ken Burns）。
+   scale(1) → scale(1.12)，时长 9.5s。
+   这里只保留硬件加速相关的属性，动画本身不写在 CSS 里，
+   以避免「CSS animation + forwards」重启不可靠导致的放大再缩小问题。 */
+.banner-ph > img { transform: scale(1); transform-origin: center center; }
 .banner-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%); }
 .banner-caption { position: relative; z-index: 2; color: #fff; max-width: 760px; padding: 0 1rem; }
 .banner-kicker { display: inline-block; font-size: .95rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .45rem 1.4rem; margin-bottom: 1.6rem; }
@@ -207,24 +209,43 @@ body.home-v1 #site-nav {
 @media (max-width: 575.98px) { .stat-card { width: 120px; height: 120px; } .stat-num { font-size: 1.75rem; } .stat-unit { font-size: .72rem; } }
 
 /* ============ 八大剂型（slide 3） ============ */
+/* 4 列 × 2 行必须在 slide 可用高度内完整显示。
+   JS 会计算 --form-card-h（每张卡片的最大高度），卡片按 3/4 比例
+   反推宽度并居中，任何屏幕高度下两行都完整可见 */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(.6rem, 1.2vh, 1.1rem);
+  justify-items: center;
+  align-items: center;
+}
+.form-col { display: flex; justify-content: center; align-items: center; width: 100%; }
 .form-card {
   display: block; position: relative; border-radius: var(--bq-radius);
-  overflow: hidden; box-shadow: var(--bq-shadow); aspect-ratio: 4 / 5;
+  overflow: hidden; box-shadow: var(--bq-shadow);
+  aspect-ratio: 3 / 4;
+  /* 高度优先取 --form-card-h（由 JS 按可用高度算出），同时不超过列宽 */
+  height: var(--form-card-h, 260px);
+  max-width: 100%;
+  /* 宽度由 aspect-ratio + height 自然推出 */
+  width: auto;
 }
 .form-img-wrap, .form-ph { position: absolute; inset: 0; transition: filter .35s, transform .35s; }
 .form-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; background: transparent; }
 .form-card:hover .form-img-wrap, .form-card:hover .form-ph { filter: blur(5px) opacity(.45); transform: scale(1.05); }
 .form-overlay {
   position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: .65rem;
+  align-items: center; justify-content: center; gap: .45rem;
   background: linear-gradient(160deg, rgba(154,14,20,.88), rgba(154,14,20,.72));
   color: #fff; opacity: 0; transition: opacity .35s; backdrop-filter: blur(2px);
-  padding: 1.2rem; text-align: center;
+  padding: .9rem; text-align: center;
 }
 .form-card:hover .form-overlay { opacity: 1; }
-.form-name { font-family: "Noto Serif SC", serif; font-size: 1.85rem; font-weight: 900; }
-.form-desc { font-size: .92rem; color: rgba(255,255,255,.85); letter-spacing: .08em; }
-.form-go { margin-top: .6rem; font-size: .88rem; border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: .35rem 1.25rem; }
+.form-name { font-family: "Noto Serif SC", serif; font-size: clamp(1.1rem, 1.6vw, 1.5rem); font-weight: 900; }
+.form-desc { font-size: clamp(.72rem, .86vw, .86rem); color: rgba(255,255,255,.85); letter-spacing: .06em; }
+.form-go { margin-top: .35rem; font-size: clamp(.7rem, .82vw, .84rem); border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: .26rem .95rem; }
+@media (max-width: 991.98px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 575.98px) { .form-grid { grid-template-columns: repeat(1, 1fr); } }
 
 /* ============ 邦琪资讯（slide 4） ============ */
 .news-grid { display: grid; grid-template-columns: 1.36fr 1fr; gap: 1.8rem; align-items: stretch; }
@@ -424,10 +445,10 @@ body.home-v1 #site-nav {
             <h2 class="sec-title">八大剂型 · 全谱系中药制造</h2>
             <p class="sec-sub">精选八大核心剂型，覆盖滋补膏方与常用中成药</p>
           </div>
-          <div class="row g-4">
+          <div class="form-grid">
             {% set form_colors = ["ph-am","ph-gy","ph-gr","ph-ta","ph-cp","ph-li","ph-ti","ph-pi"] %}
             {% for f in dosage_form_cards %}
-            <div class="col-6 col-md-4 col-lg-3 slide-enter from-bottom" data-stagger="{{ loop.index0 }}">
+            <div class="form-col slide-enter from-bottom" data-stagger="{{ loop.index0 }}">
               <a href="/products?form={{ f.name }}" class="form-card">
                 {% if f.image %}
                 <div class="form-img-wrap">
@@ -614,6 +635,8 @@ document.addEventListener("DOMContentLoaded", function () {
   var nav = document.getElementById("site-nav");
   var footer = document.getElementById("site-footer");
   if (footer && footer.style) footer.style.setProperty("display", "none", "important");
+  // 首屏进入时就把 topbar 的过渡关掉，避免「刷新后先消失再弹出」
+  if (topbar) topbar.style.transition = "none";
 
   /* ------------------------------------------------------------------
      布局测量：算出 topbar 展开高度、nav 高度，
@@ -624,14 +647,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function measure() {
     if (nav) NAV_H = Math.round(nav.getBoundingClientRect().height);
-    // 临时展开 topbar 以测量其真实高度
     if (topbar) {
-      var wasShow = topbar.classList.contains("tb-show");
+      // 临时移除 .tb-hide 以测量 topbar 的真实展开高度
+      var wasHidden = topbar.classList.contains("tb-hide");
       var prevTransition = topbar.style.transition;
       topbar.style.transition = "none";
-      if (!wasShow) topbar.classList.add("tb-show");
+      if (wasHidden) topbar.classList.remove("tb-hide");
       TB_H = Math.round(topbar.getBoundingClientRect().height);
-      if (!wasShow) topbar.classList.remove("tb-show");
+      if (wasHidden) topbar.classList.add("tb-hide");
       void topbar.offsetHeight;
       topbar.style.transition = prevTransition;
     }
@@ -640,29 +663,80 @@ document.addEventListener("DOMContentLoaded", function () {
     if (NAV_H) root.setProperty("--nav-h", NAV_H + "px");
   }
 
-  /* 把 swiper 的 top / nav 的 top 同步到当前 topbar 状态 */
-  function applyOffset(bannerOn) {
+  /* ------------------------------------------------------------------
+     问题 3：八大剂型卡片高度 —— 按 slide 可用高度算出每张卡片的
+     最大高度，保证 4 列 × 2 行 + 标题在任何屏幕高度下都完整可见
+     ------------------------------------------------------------------ */
+  function calcFormCardHeight() {
+    var slide = el.querySelector('[data-slide="products"]');
+    if (!slide) return;
+    var inner = slide.querySelector(".slide-inner");
+    if (!inner) return;
+
+    var cs = window.getComputedStyle(inner);
+    var padTop = parseFloat(cs.paddingTop) || 0;
+    var padBottom = parseFloat(cs.paddingBottom) || 0;
+
+    var head = slide.querySelector(".sec-head");
+    var headH = head ? head.getBoundingClientRect().height : 0;
+
+    var grid = slide.querySelector(".form-grid");
+    var rowGap = 12;
+    if (grid) {
+      var gcs = window.getComputedStyle(grid);
+      rowGap = parseFloat(gcs.rowGap) || parseFloat(gcs.gap) || 12;
+    }
+
+    var avail = slide.clientHeight - padTop - padBottom - headH;
+    // 2 行 + 1 个行间距
+    var cardH = Math.floor((avail - rowGap) / 2);
+    // 合理区间：不低于 140px，且不超过列宽推算的上限（留点余量）
+    cardH = Math.max(140, cardH);
+    var colW = 0;
+    if (grid) {
+      var cols = window.getComputedStyle(grid).gridTemplateColumns.split(" ");
+      if (cols.length) colW = parseFloat(cols[0]) || 0;
+    }
+    if (colW > 0) {
+      // aspect-ratio 3/4 → 高度 = 宽度 / 0.75
+      cardH = Math.min(cardH, Math.floor(colW / 0.75));
+    }
+    document.documentElement.style.setProperty("--form-card-h", cardH + "px");
+  }
+
+  /* 把 topbar / nav / swiper 三者的位置同步到当前状态 */
+  function applyOffset(topbarOpen) {
     var root = document.documentElement.style;
-    // nav 在 topbar 展开时下移一个 topbar 高度
-    if (nav) nav.style.top = bannerOn ? TB_H + "px" : "0px";
+    if (nav) nav.style.top = topbarOpen ? TB_H + "px" : "0px";
     // swiper 顶部让开 nav（+ topbar 若展开）
-    root.setProperty("--nav-h", (NAV_H + (bannerOn ? TB_H : 0)) + "px");
+    root.setProperty("--nav-h", (NAV_H + (topbarOpen ? TB_H : 0)) + "px");
   }
 
   /* ------------------------------------------------------------------
-     问题 1：topbar 在 banner 屏淡入、其他屏淡出（用 .tb-show + CSS 过渡）
+     问题 1+2：topbar 显隐
+     - banner 屏 & footer 屏 → 展开
+     - 其他屏 → 收起
+     默认 CSS 态即展开，所以刷新时不会「先消失再弹出」
      ------------------------------------------------------------------ */
-  function syncTopbar(idx) {
+  function syncTopbar(slideKey) {
     if (!topbar) return;
-    var bannerOn = idx === 0;
-    if (bannerOn) {
-      topbar.classList.add("tb-show");
+    // banner 和 footer 两屏显示 topbar，其余收起
+    var open = (slideKey === "banner" || slideKey === "footer");
+
+    if (open) {
+      topbar.classList.remove("tb-hide");
       document.body.classList.add("is-banner-slide");
     } else {
-      topbar.classList.remove("tb-show");
+      topbar.classList.add("tb-hide");
       document.body.classList.remove("is-banner-slide");
     }
-    applyOffset(bannerOn);
+    applyOffset(open);
+  }
+
+  function slideKeyOf(sw) {
+    if (!sw || !sw.slides) return "banner";
+    var s = sw.slides[sw.activeIndex];
+    return s ? (s.dataset.slide || "") : "";
   }
 
   /* ------------------------------------------------------------------
@@ -745,27 +819,54 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* ------------------------------------------------------------------
-     问题 4：banner Ken Burns 缓慢缩放 —— 每次切图都重新启动动画
+     问题 4：banner Ken Burns 缓慢缩放
+     关键修复：
+     1) 切换时先清掉「所有」banner 图片的动画（含上一张已 forwards 锁定的），
+        否则新旧两张同时动 → 视觉上「放大再缩小」
+     2) 用 WAAPI 播放而非 CSS animation + forwards，避免「还原再重放」
+        这类不可靠的重启行为
      ------------------------------------------------------------------ */
+  var KB_DUR = 9500;   // 与 data-bs-interval(4000) 相比更长，保证全程连贯
+
+  function stopAllKenBurns(banner) {
+    banner.querySelectorAll(".banner-ph > img").forEach(function (im) {
+      if (im._kbAnim) { try { im._kbAnim.cancel(); } catch (e) {} im._kbAnim = null; }
+      im.style.transform = "";
+      im.style.animation = "";
+    });
+  }
+
   function startKenBurns(item) {
     if (!item) return;
     var img = item.querySelector(".banner-ph > img");
     if (!img) return;
-    // 重置动画：移除类 → 强制重排 → 重新添加
-    img.classList.remove("kb-run");
-    void img.offsetWidth;
-    img.classList.add("kb-run");
+    if (img._kbAnim) { try { img._kbAnim.cancel(); } catch (e) {} }
+    // 该图从 scale(1) 缓慢放大到 scale(1.12)
+    img._kbAnim = img.animate(
+      [
+        { transform: "scale(1)" },
+        { transform: "scale(1.12)" }
+      ],
+      { duration: KB_DUR, easing: "ease-out", fill: "forwards" }
+    );
   }
 
   function bindBanner(banner) {
     if (!banner) return;
     // 首张立即开始
     startKenBurns(banner.querySelector(".carousel-item.active"));
-    // Bootstrap carousel 切图事件：每次切换重新启动缩放
+
+    // Bootstrap carousel 切图：先清掉所有图的动画，再给新图启动
+    banner.addEventListener("slide.bs.carousel", function () {
+      // slide 事件在切换开始时触发，此时先停掉全部动画，避免交叉干扰
+      stopAllKenBurns(banner);
+    });
     banner.addEventListener("slid.bs.carousel", function (ev) {
+      // 切换完成后启动新图的缩放
       startKenBurns(ev.relatedTarget);
     });
-    // 鼠标悬停 banner 时暂停轮播，避免正在欣赏时被切走
+
+    // 鼠标悬停暂停轮播（保留缩放继续），移开恢复
     banner.addEventListener("mouseenter", function () {
       if (window.bootstrap && bootstrap.Carousel) {
         var inst = bootstrap.Carousel.getInstance(banner);
@@ -778,14 +879,33 @@ document.addEventListener("DOMContentLoaded", function () {
         if (inst) inst.cycle();
       }
     });
+
+    // 页面切到后台时也暂停自动轮播，回来恢复（省资源、也更稳）
+    document.addEventListener("visibilitychange", function () {
+      if (!window.bootstrap || !bootstrap.Carousel) return;
+      var inst = bootstrap.Carousel.getInstance(banner);
+      if (!inst) return;
+      if (document.hidden) inst.pause();
+      else inst.cycle();
+    });
   }
 
   /* 初始化布局测量 */
   measure();
-  applyOffset(true);
+  calcFormCardHeight();
+  applyOffset(true);   // 首屏是 banner → topbar 展开
+
   window.addEventListener("resize", function () {
+    var wasOpen = !(topbar && topbar.classList.contains("tb-hide"));
     measure();
-    applyOffset(document.body.classList.contains("is-banner-slide"));
+    calcFormCardHeight();
+    applyOffset(wasOpen);
+  });
+
+  // 图片/字体加载完后布局可能变化，重算一次卡片高度
+  window.addEventListener("load", function () {
+    calcFormCardHeight();
+    measure();
   });
 
   var swiper = new Swiper(el, {
@@ -799,24 +919,34 @@ document.addEventListener("DOMContentLoaded", function () {
     on: {
       init: function () {
         var s = this.slides[this.activeIndex];
+        var key = s ? (s.dataset.slide || "") : "";
+        // topbar 状态立刻同步（初始态本身就是展开的，这里只做兜底）
+        syncTopbar(key);
+        // 测量 & 卡片高度（此时 DOM 已就位）
+        measure();
+        calcFormCardHeight();
         // 首屏：等一帧让布局稳定后再播放动画
         requestAnimationFrame(function () {
           var md = triggerSlide(s);
-          if (s && s.dataset.slide === "about") {
+          if (key === "about") {
             setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
           }
+          // 淡入 topbar 的过渡：首屏渲染完成后再启用，避免刷新时闪烁
+          if (topbar) {
+            setTimeout(function () { topbar.style.transition = ""; }, 60);
+          }
         });
-        syncTopbar(this.activeIndex);
         bindBanner(document.getElementById("homeBanner"));
       },
       slideChangeTransitionEnd: function () {
         var s = this.slides[this.activeIndex];
         var md = triggerSlide(s);
+        var key = s ? (s.dataset.slide || "") : "";
         // 三圆环只在首次进入 about 屏时播放
-        if (s && s.dataset.slide === "about") {
+        if (key === "about") {
           setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
         }
-        syncTopbar(this.activeIndex);
+        syncTopbar(key);
       },
     },
   });
