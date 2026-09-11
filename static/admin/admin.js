@@ -69,7 +69,7 @@ const RESOURCES = {
     fields: [
       {k: "name", l: "剂型名称", t: "text"},
       {k: "description", l: "剂型简介", t: "text"},
-      {k: "image", l: "剂型图片（480×600）", t: "image"},
+      {k: "image", l: "剂型图片（推荐 450×600，比例 3:4）", t: "image"},
       {k: "sort_order", l: "排序", t: "number", def: 0},
     ],
     cols: ["name", "description", "image", "sort_order"],
