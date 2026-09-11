@@ -1,30 +1,37 @@
 {% extends "base.html" %}
 {% block title %}邦琪药业 - 传承中药精华 服务大众健康{% endblock %}
+{# ★ home-v1 / tb-no-anim 直接写在 body 标签上（服务端渲染），
+   保证首帧就是最终布局，避免刷新时导航栏跳动或闪烁。
+   tb-no-anim 会在首帧渲染后被 JS 移除，之后的切换才有过渡动画 #}
+{% block body_class %}home-v1 tb-no-anim{% endblock %}
 
 {% block extra_css %}
 <link href="https://unpkg.com/swiper@11.2.10/swiper-bundle.min.css" rel="stylesheet">
 <style>
-/* ============ v1.1 主页专用：topbar 平滑显隐 + swiper 避开导航栏 ============ */
+/* ============ 主页专用：topbar 平滑显隐 + swiper 避开导航栏 ============ */
 :root {
-  /* topbar 展开后的高度（JS 会实测并覆盖） */
-  --tb-h: 34px;
-  /* 导航栏高度（JS 会实测并覆盖） */
-  --nav-h: 72px;
+  /* topbar 展开后的高度、导航栏高度 —— 均由 JS 实测后覆盖 */
+  --tb-h: 32px;
+  --nav-h: 76px;
+  /* swiper 顶部偏移 = topbar(若展开) + 导航栏。由 JS 精确同步，
+     单一变量避免多处 calc 不同步产生空白 */
+  --swiper-top: 108px;
+  /* 导航栏顶部位置 = topbar 展开时为其高度，收起时 0 */
+  --nav-top: 32px;
 }
 
 body.home-v1 { overflow: hidden; background: #fff; }
 body.home-v1 #site-footer { display: none; }
 
-/* ---- topbar：固定顶部，用 max-height + opacity 过渡实现平滑显隐 ----
-   ★ 默认态 = 展开（首屏 banner 就要显示），避免刷新时「先消失再弹出」
-   收起由 JS 添加 .tb-hide 类触发 */
+/* ---- topbar：固定顶部，max-height + opacity 过渡实现平滑显隐 ----
+   ★ 默认态 = 展开（首屏 banner 就要显示），避免刷新时闪烁
+   收起由 JS 添加 .tb-hide 触发 */
 body.home-v1 #site-topbar {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 70;
   overflow: hidden;
-  /* 默认展开 */
-  max-height: 60px;
+  max-height: var(--tb-h);
   opacity: 1;
   padding-top: .45rem;
   padding-bottom: .45rem;
@@ -40,6 +47,12 @@ body.home-v1 #site-topbar.tb-hide {
   padding-top: 0;
   padding-bottom: 0;
 }
+/* ★ 刷新首帧禁用过渡：JS 会在首屏渲染完成后移除这个类 */
+body.home-v1.tb-no-anim #site-topbar,
+body.home-v1.tb-no-anim #site-nav,
+body.home-v1.tb-no-anim .home-swiper {
+  transition: none !important;
+}
 
 /* ---- 导航栏：固定顶部，top 跟随 topbar 展开/收起 ----
    注意：base.html 上有 Bootstrap 的 .sticky-top（position:sticky!important），
@@ -50,19 +63,17 @@ body.home-v1 #site-nav {
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.06);
   position: fixed !important;
-  /* 默认 topbar 展开 → nav 下移一个 topbar 高度 */
-  top: var(--tb-h, 34px);
+  top: var(--nav-top);
   left: 0; right: 0;
   z-index: 65;
   transition: top .45s cubic-bezier(.4,0,.2,1),
               background .35s ease;
 }
 
-/* ============ Swiper 全屏容器（顶部避开 topbar + 导航栏） ============ */
+/* ============ Swiper 全屏容器（顶部精确让开 topbar + 导航栏） ============ */
 .home-swiper {
   position: fixed;
-  /* 默认 topbar 展开 → 让开 topbar + nav */
-  top: calc(var(--tb-h, 34px) + var(--nav-h, 72px));
+  top: var(--swiper-top);
   left: 0; right: 0; bottom: 0;
   width: 100%;
   height: auto;
@@ -619,7 +630,8 @@ body.home-v1 #site-nav {
 <script src="https://unpkg.com/swiper@11.2.10/swiper-bundle.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  /* ============ 邦琪 v1.1 主页 Swiper 全屏幻灯片 ============ */
+  /* ============ 主页 Swiper 全屏幻灯片 ============ */
+  // home-v1 / tb-no-anim 已由服务端写在 <body> 上，这里只需确认
   document.body.classList.add("home-v1");
 
   var el = document.getElementById("homeSwiper");
@@ -635,12 +647,9 @@ document.addEventListener("DOMContentLoaded", function () {
   var nav = document.getElementById("site-nav");
   var footer = document.getElementById("site-footer");
   if (footer && footer.style) footer.style.setProperty("display", "none", "important");
-  // 首屏进入时就把 topbar 的过渡关掉，避免「刷新后先消失再弹出」
-  if (topbar) topbar.style.transition = "none";
 
   /* ------------------------------------------------------------------
-     布局测量：算出 topbar 展开高度、nav 高度，
-     让 .home-swiper 的 top 精确避开「topbar(当前状态) + nav」
+     布局测量：算出 topbar 展开高度、nav 高度
      ------------------------------------------------------------------ */
   var TB_H = 0;   // topbar 展开后的总高度（含 padding）
   var NAV_H = 0;  // 导航栏高度
@@ -664,7 +673,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* ------------------------------------------------------------------
-     问题 3：八大剂型卡片高度 —— 按 slide 可用高度算出每张卡片的
+     八大剂型卡片高度 —— 按 slide 可用高度算出每张卡片的
      最大高度，保证 4 列 × 2 行 + 标题在任何屏幕高度下都完整可见
      ------------------------------------------------------------------ */
   function calcFormCardHeight() {
@@ -704,16 +713,21 @@ document.addEventListener("DOMContentLoaded", function () {
     document.documentElement.style.setProperty("--form-card-h", cardH + "px");
   }
 
-  /* 把 topbar / nav / swiper 三者的位置同步到当前状态 */
+  /* ------------------------------------------------------------------
+     位置同步：把 topbar / nav / swiper 三者的位置用「单一变量」统一更新，
+     避免多处 calc 取值不同步导致两条之间出现空白缝隙
+     ------------------------------------------------------------------ */
   function applyOffset(topbarOpen) {
     var root = document.documentElement.style;
-    if (nav) nav.style.top = topbarOpen ? TB_H + "px" : "0px";
-    // swiper 顶部让开 nav（+ topbar 若展开）
-    root.setProperty("--nav-h", (NAV_H + (topbarOpen ? TB_H : 0)) + "px");
+    var tbH = topbarOpen ? TB_H : 0;
+    // 导航栏顶部 = topbar 展开时下移一个 topbar 高度，否则贴顶
+    root.setProperty("--nav-top", tbH + "px");
+    // swiper 顶部 = topbar(若展开) + 导航栏高度 —— 精确咬合，不留缝
+    root.setProperty("--swiper-top", (tbH + NAV_H) + "px");
   }
 
   /* ------------------------------------------------------------------
-     问题 1+2：topbar 显隐
+     topbar 显隐
      - banner 屏 & footer 屏 → 展开
      - 其他屏 → 收起
      默认 CSS 态即展开，所以刷新时不会「先消失再弹出」
@@ -866,21 +880,11 @@ document.addEventListener("DOMContentLoaded", function () {
       startKenBurns(ev.relatedTarget);
     });
 
-    // 鼠标悬停暂停轮播（保留缩放继续），移开恢复
-    banner.addEventListener("mouseenter", function () {
-      if (window.bootstrap && bootstrap.Carousel) {
-        var inst = bootstrap.Carousel.getInstance(banner);
-        if (inst) inst.pause();
-      }
-    });
-    banner.addEventListener("mouseleave", function () {
-      if (window.bootstrap && bootstrap.Carousel) {
-        var inst = bootstrap.Carousel.getInstance(banner);
-        if (inst) inst.cycle();
-      }
-    });
-
-    // 页面切到后台时也暂停自动轮播，回来恢复（省资源、也更稳）
+    /* ★ 不做任何 mouseenter/mouseleave 干预：
+       需求明确「banner 切换不应受鼠标指向影响」。
+       Bootstrap carousel 本身默认就不会因悬停而暂停，
+       之前的 pause()/cycle() 反而导致悬停时停止自动切换。
+       唯一保留的是「页面切到后台时暂停」，避免后台空转堆定时器。 */
     document.addEventListener("visibilitychange", function () {
       if (!window.bootstrap || !bootstrap.Carousel) return;
       var inst = bootstrap.Carousel.getInstance(banner);
@@ -890,22 +894,45 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  /* 初始化布局测量 */
+  /* ------------------------------------------------------------------
+     初始化
+     ★ 关键：先禁用过渡（tb-no-anim），跑完测量与位置同步后再移除，
+       彻底消除刷新时导航栏「先下弹一下」的动画
+     ------------------------------------------------------------------ */
+  document.body.classList.add("tb-no-anim");
+
   measure();
   calcFormCardHeight();
   applyOffset(true);   // 首屏是 banner → topbar 展开
 
+  // 强制一帧，确保上面的定位在无过渡状态下已经应用
+  void document.body.offsetHeight;
+
+  // 下一帧恢复过渡，之后的切换才有平滑动画
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      document.body.classList.remove("tb-no-anim");
+    });
+  });
+
   window.addEventListener("resize", function () {
     var wasOpen = !(topbar && topbar.classList.contains("tb-hide"));
+    // resize 期间也禁用过渡，避免拖动窗口时出现抖动
+    document.body.classList.add("tb-no-anim");
     measure();
     calcFormCardHeight();
     applyOffset(wasOpen);
+    void document.body.offsetHeight;
+    requestAnimationFrame(function () {
+      document.body.classList.remove("tb-no-anim");
+    });
   });
 
   // 图片/字体加载完后布局可能变化，重算一次卡片高度
   window.addEventListener("load", function () {
     calcFormCardHeight();
     measure();
+    applyOffset(!(topbar && topbar.classList.contains("tb-hide")));
   });
 
   var swiper = new Swiper(el, {
@@ -925,15 +952,12 @@ document.addEventListener("DOMContentLoaded", function () {
         // 测量 & 卡片高度（此时 DOM 已就位）
         measure();
         calcFormCardHeight();
+        applyOffset(key === "banner" || key === "footer");
         // 首屏：等一帧让布局稳定后再播放动画
         requestAnimationFrame(function () {
           var md = triggerSlide(s);
           if (key === "about") {
             setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
-          }
-          // 淡入 topbar 的过渡：首屏渲染完成后再启用，避免刷新时闪烁
-          if (topbar) {
-            setTimeout(function () { topbar.style.transition = ""; }, 60);
           }
         });
         bindBanner(document.getElementById("homeBanner"));
