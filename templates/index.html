@@ -4,27 +4,69 @@
 {% block extra_css %}
 <link href="https://unpkg.com/swiper@11.2.10/swiper-bundle.min.css" rel="stylesheet">
 <style>
-/* ============ v1.1 主页专用：home-v1 + is-banner-slide 由 JS 控制 ============ */
-/* topbar 显隐：默认首页隐藏，仅 banner slide 由 JS 控 display */
+/* ============ v1.1 主页专用：topbar 平滑显隐 + swiper 避开导航栏 ============ */
+:root {
+  /* topbar 展开后的高度（JS 会实测并覆盖） */
+  --tb-h: 34px;
+  /* 导航栏高度（JS 会实测并覆盖） */
+  --nav-h: 72px;
+}
+
+body.home-v1 { overflow: hidden; background: #fff; }
 body.home-v1 #site-footer { display: none; }
+
+/* ---- topbar：固定顶部，用 max-height + opacity 过渡实现平滑显隐 ----
+   （display 无法过渡，所以用 max-height 收起） */
+body.home-v1 #site-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 70;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  transition: max-height .45s cubic-bezier(.4,0,.2,1),
+              opacity .32s ease,
+              padding .45s cubic-bezier(.4,0,.2,1);
+  will-change: max-height, opacity;
+}
+body.home-v1 #site-topbar.tb-show {
+  max-height: var(--tb-h);
+  opacity: 1;
+  padding-top: .45rem;
+  padding-bottom: .45rem;
+}
+
+/* ---- 导航栏：固定顶部，top 跟随 topbar 展开/收起 ----
+   注意：base.html 上有 Bootstrap 的 .sticky-top（position:sticky!important），
+   这里必须用 !important 覆盖为 fixed */
 body.home-v1 #site-nav {
   background: rgba(255,255,255,.55);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.06);
+  position: fixed !important;
+  top: 0;                    /* JS 在 topbar 展开时改为 var(--tb-h) */
+  left: 0; right: 0;
+  z-index: 65;
+  transition: top .45s cubic-bezier(.4,0,.2,1),
+              background .35s ease;
 }
-body.home-v1 { overflow: hidden; background: #fff; }
-/* JS 会在 v1.1 脚本里通过 setProperty 强制覆盖 display，保证不依赖 CSS 优先级 */
 
-/* ============ Swiper 全屏容器 ============ */
+/* ============ Swiper 全屏容器（顶部避开 topbar + 导航栏） ============ */
 .home-swiper {
-  position: fixed; inset: 0; top: 0; left: 0;
-  width: 100%; height: 100dvh;
+  position: fixed;
+  top: var(--nav-h);         /* JS 动态更新：nav 高度 + topbar 当前高度 */
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: auto;
   z-index: 1;
   background: var(--bq-bg);
+  transition: top .45s cubic-bezier(.4,0,.2,1);
 }
 .home-swiper .swiper-slide {
-  height: 100dvh;
+  height: 100%;
   overflow-y: auto; overflow-x: hidden;
   display: flex; flex-direction: column;
   position: relative;
@@ -34,7 +76,7 @@ body.home-v1 { overflow: hidden; background: #fff; }
   flex: 1;
   display: flex; flex-direction: column;
   justify-content: center;
-  padding: 5rem 0 3rem;
+  padding: 2.5rem 0 3rem;
   min-height: 100%;
 }
 .slide-tint { background: var(--bq-red-soft); }
@@ -66,6 +108,8 @@ body.home-v1 { overflow: hidden; background: #fff; }
 }
 
 /* ============ 动画初始态：所有 slide-enter 默认隐藏 ============ */
+/* 注意：动画由 JS 的 Web Animations API 驱动（保证每次进入都重播），
+   这里的 transform 只作为「未播放时」的初始静止态 */
 .slide-enter {
   opacity: 0;
   transition: opacity .85s cubic-bezier(.2,.8,.3,1),
@@ -76,6 +120,7 @@ body.home-v1 { overflow: hidden; background: #fff; }
 .slide-enter.from-right { transform: translateX(110%); }
 .slide-enter.from-bottom{ transform: translateY(100%); }
 .slide-enter.from-fade  { transform: translateY(40px); }
+/* .active 仅在无 WAAPI 支持的降级路径下使用 */
 .slide-enter.active {
   opacity: 1 !important;
   transform: translateX(0) translateY(0) !important;
@@ -91,11 +136,29 @@ body.home-v1 { overflow: hidden; background: #fff; }
 .home-slide-banner .carousel-inner,
 .home-slide-banner .carousel-item,
 .home-slide-banner .banner-ph {
-  height: 100dvh;
-  min-height: 600px;
+  height: 100%;
+  min-height: 480px;
 }
 .banner-ph { position: relative; overflow: hidden; }
-.banner-ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* 图片容器负责 Ken Burns 缓慢缩放；用 will-change 提升为合成层避免卡顿 */
+.banner-ph > img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scale(1);
+  transform-origin: center center;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+/* 激活中的 banner 图片播放缓慢放大（Ken Burns），时长略长于轮播间隔以便全程连贯 */
+@keyframes bqKenBurns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.12); }
+}
+.banner-ph > img.kb-run {
+  animation: bqKenBurns 9.5s ease-out forwards;
+}
 .banner-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%); }
 .banner-caption { position: relative; z-index: 2; color: #fff; max-width: 760px; padding: 0 1rem; }
 .banner-kicker { display: inline-block; font-size: .95rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .45rem 1.4rem; margin-bottom: 1.6rem; }
@@ -103,9 +166,12 @@ body.home-v1 { overflow: hidden; background: #fff; }
 .banner-caption p { color: rgba(255,255,255,.82); font-size: 1.18rem; margin-bottom: 2.2rem; }
 .banner-caption .btn { display: inline-block; padding: .85rem 2rem; background: var(--bq-red); color: #fff; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 1.02rem; transition: background .2s, transform .2s; }
 .banner-caption .btn:hover { background: var(--bq-red-2); transform: translateY(-2px); }
-#homeBanner .carousel-indicators { margin-bottom: 2rem; z-index: 5; }
-#homeBanner .carousel-indicators [data-bs-target] { width: 38px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
-#homeBanner .carousel-indicators .active { background: var(--bq-gold); }
+/* banner 下方的长条分页器已按要求移除 */
+#homeBanner .carousel-indicators { display: none !important; }
+/* carousel-fade 的默认过渡设为更平滑的 1.1s 交叉淡入 */
+.home-slide-banner .carousel-fade .carousel-item {
+  transition: opacity 1.1s cubic-bezier(.4,0,.2,1);
+}
 
 /* ============ 公司简介（slide 2） ============ */
 .intro-text { color: #4a5852; line-height: 2.05; font-size: 1.05rem; text-align: justify; }
@@ -271,11 +337,7 @@ body.home-v1 { overflow: hidden; background: #fff; }
     <!-- ===== Slide 1: Banner（内部 carousel 4 秒自动切换，循环） ===== -->
     <section class="swiper-slide home-slide-banner" data-slide="banner">
       <div id="homeBanner" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
-        <div class="carousel-indicators">
-          {% for b in banners %}
-          <button type="button" data-bs-target="#homeBanner" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first }}"></button>
-          {% endfor %}
-        </div>
+        <!-- 长条分页器已按要求移除 -->
         <div class="carousel-inner">
           {% for b in banners %}
           <div class="carousel-item {{ 'active' if loop.first }}">
@@ -548,77 +610,183 @@ document.addEventListener("DOMContentLoaded", function () {
     window.bqCountersObserver = null;
   }
 
-  // 强制收起 topbar / footer 初始态，避免首屏未挂脚本前看到
   var topbar = document.getElementById("site-topbar");
+  var nav = document.getElementById("site-nav");
   var footer = document.getElementById("site-footer");
-  if (topbar) topbar.style.setProperty("display", "none", "important");
   if (footer && footer.style) footer.style.setProperty("display", "none", "important");
 
-  // banner 屏 vs 其他屏：控制 topbar 显隐（直接操作 inline display，绕开 CSS 优先级问题）
-  function syncTopbar(idx) {
-    if (!topbar) return;
-    if (idx === 0) {
-      topbar.style.setProperty("display", "block", "important");
-      document.body.classList.add("is-banner-slide");
-    } else {
-      topbar.style.setProperty("display", "none", "important");
-      document.body.classList.remove("is-banner-slide");
+  /* ------------------------------------------------------------------
+     布局测量：算出 topbar 展开高度、nav 高度，
+     让 .home-swiper 的 top 精确避开「topbar(当前状态) + nav」
+     ------------------------------------------------------------------ */
+  var TB_H = 0;   // topbar 展开后的总高度（含 padding）
+  var NAV_H = 0;  // 导航栏高度
+
+  function measure() {
+    if (nav) NAV_H = Math.round(nav.getBoundingClientRect().height);
+    // 临时展开 topbar 以测量其真实高度
+    if (topbar) {
+      var wasShow = topbar.classList.contains("tb-show");
+      var prevTransition = topbar.style.transition;
+      topbar.style.transition = "none";
+      if (!wasShow) topbar.classList.add("tb-show");
+      TB_H = Math.round(topbar.getBoundingClientRect().height);
+      if (!wasShow) topbar.classList.remove("tb-show");
+      void topbar.offsetHeight;
+      topbar.style.transition = prevTransition;
     }
+    var root = document.documentElement.style;
+    if (TB_H) root.setProperty("--tb-h", TB_H + "px");
+    if (NAV_H) root.setProperty("--nav-h", NAV_H + "px");
   }
 
-  // 给当前屏内所有 .slide-enter 设置错峰延迟
-  function prepareSlide(slide) {
+  /* 把 swiper 的 top / nav 的 top 同步到当前 topbar 状态 */
+  function applyOffset(bannerOn) {
+    var root = document.documentElement.style;
+    // nav 在 topbar 展开时下移一个 topbar 高度
+    if (nav) nav.style.top = bannerOn ? TB_H + "px" : "0px";
+    // swiper 顶部让开 nav（+ topbar 若展开）
+    root.setProperty("--nav-h", (NAV_H + (bannerOn ? TB_H : 0)) + "px");
+  }
+
+  /* ------------------------------------------------------------------
+     问题 1：topbar 在 banner 屏淡入、其他屏淡出（用 .tb-show + CSS 过渡）
+     ------------------------------------------------------------------ */
+  function syncTopbar(idx) {
+    if (!topbar) return;
+    var bannerOn = idx === 0;
+    if (bannerOn) {
+      topbar.classList.add("tb-show");
+      document.body.classList.add("is-banner-slide");
+    } else {
+      topbar.classList.remove("tb-show");
+      document.body.classList.remove("is-banner-slide");
+    }
+    applyOffset(bannerOn);
+  }
+
+  /* ------------------------------------------------------------------
+     问题 2：进入各屏时元素弹出动画 —— 用 Web Animations API 重放
+     每次进入都新建一次 animation，彻底避免「只播一次 / 复播无效」
+     ------------------------------------------------------------------ */
+  var EASE = "cubic-bezier(.2,.8,.3,1)";
+  var DUR = 850;
+
+  function initialTransform(e) {
+    if (e.classList.contains("from-left"))   return "translateX(-110%)";
+    if (e.classList.contains("from-right"))  return "translateX(110%)";
+    if (e.classList.contains("from-bottom")) return "translateY(100%)";
+    if (e.classList.contains("from-fade"))   return "translateY(40px)";
+    return "translateY(40px)";
+  }
+
+  function triggerSlide(slide) {
     if (!slide) return 0;
-    var enters = slide.querySelectorAll(".slide-enter");
+    var enters = Array.prototype.slice.call(slide.querySelectorAll(".slide-enter"));
     var maxDelay = 0;
+
     enters.forEach(function (e) {
       var s = parseInt(e.dataset.stagger || 0, 10);
-      var d = s * 0.18;
-      if (d > maxDelay) maxDelay = d;
-      e.style.transitionDelay = d + "s";
+      var delay = s * 0.18;
+      if (delay > maxDelay) maxDelay = delay;
+
+      // 取消该元素上尚未播完的旧动画，避免叠加
+      if (e._bqAnim) { try { e._bqAnim.cancel(); } catch (err) {} }
+
+      // 先把元素摆回初始静止态（内联样式优先，不会被 CSS 抢回）
+      e.style.transition = "none";
+      e.style.opacity = "0";
+      e.style.transform = initialTransform(e);
     });
+
+    // 强制一次样式计算，确保初始态被浏览器接收
+    void slide.offsetHeight;
+
+    // 用 WAAPI 播放；每次都是全新动画实例 → 必定重播
+    enters.forEach(function (e) {
+      var s = parseInt(e.dataset.stagger || 0, 10);
+      var anim = e.animate(
+        [
+          { opacity: 0, transform: initialTransform(e) },
+          { opacity: 1, transform: "translateX(0) translateY(0)" }
+        ],
+        {
+          duration: DUR,
+          delay: s * 180,
+          easing: EASE,
+          fill: "both"
+        }
+      );
+      e._bqAnim = anim;
+      // 动画结束后清掉内联样式，交回 CSS 控制（避免长期残留）
+      anim.onfinish = function () {
+        e.style.transition = "";
+        e.style.opacity = "";
+        e.style.transform = "";
+      };
+    });
+
     return maxDelay;
   }
 
-  // 触发当前屏所有 .slide-enter 动画：使用双 rAF 确保每次进入都重新播放
-  function triggerSlide(slide, maxDelay) {
-    if (!slide) return;
-    var enters = slide.querySelectorAll(".slide-enter");
-    // 步骤 1：移除 active 类，并显式重置 transform 到初始偏移量
-    enters.forEach(function (e) {
-      e.classList.remove("active");
-      // 重置为初始位移态，确保浏览器真正检测到「状态变更」
-      var t = "";
-      if (e.classList.contains("from-left")) t = "translateX(-110%)";
-      else if (e.classList.contains("from-right")) t = "translateX(110%)";
-      else if (e.classList.contains("from-bottom")) t = "translateY(80px)";
-      else if (e.classList.contains("from-fade")) t = "translateY(40px)";
-      e.style.transform = t;
-      e.style.opacity = "0";
-    });
-    // 步骤 2：双 rAF 后清除 inline style，让 CSS .active 接管
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        enters.forEach(function (e) {
-          e.style.transform = "";
-          e.style.opacity = "";
-          e.classList.add("active");
-        });
+  /* ------------------------------------------------------------------
+     问题 3：三圆环数字 + 进度环 —— 只在第一次进入 about 屏时播放一次
+     ------------------------------------------------------------------ */
+  var aboutPlayed = false;
 
-        // 公司简介屏：左/右滑入完成后（约 maxDelay + 0.85s）才触发 3 圆环数字动画
-        if (slide.dataset.slide === "about") {
-          var totalMs = (maxDelay + 0.9) * 1000;
-          setTimeout(function () {
-            slide.querySelectorAll(".stat-num").forEach(function (n) {
-              if (typeof window.bqAnimateCounter === "function") {
-                window.bqAnimateCounter(n);
-              }
-            });
-          }, totalMs);
-        }
-      });
+  function playAboutStats(slide) {
+    if (aboutPlayed) return;
+    aboutPlayed = true;
+    slide.querySelectorAll(".stat-num").forEach(function (n) {
+      if (typeof window.bqAnimateCounter === "function") {
+        window.bqAnimateCounter(n);
+      }
     });
   }
+
+  /* ------------------------------------------------------------------
+     问题 4：banner Ken Burns 缓慢缩放 —— 每次切图都重新启动动画
+     ------------------------------------------------------------------ */
+  function startKenBurns(item) {
+    if (!item) return;
+    var img = item.querySelector(".banner-ph > img");
+    if (!img) return;
+    // 重置动画：移除类 → 强制重排 → 重新添加
+    img.classList.remove("kb-run");
+    void img.offsetWidth;
+    img.classList.add("kb-run");
+  }
+
+  function bindBanner(banner) {
+    if (!banner) return;
+    // 首张立即开始
+    startKenBurns(banner.querySelector(".carousel-item.active"));
+    // Bootstrap carousel 切图事件：每次切换重新启动缩放
+    banner.addEventListener("slid.bs.carousel", function (ev) {
+      startKenBurns(ev.relatedTarget);
+    });
+    // 鼠标悬停 banner 时暂停轮播，避免正在欣赏时被切走
+    banner.addEventListener("mouseenter", function () {
+      if (window.bootstrap && bootstrap.Carousel) {
+        var inst = bootstrap.Carousel.getInstance(banner);
+        if (inst) inst.pause();
+      }
+    });
+    banner.addEventListener("mouseleave", function () {
+      if (window.bootstrap && bootstrap.Carousel) {
+        var inst = bootstrap.Carousel.getInstance(banner);
+        if (inst) inst.cycle();
+      }
+    });
+  }
+
+  /* 初始化布局测量 */
+  measure();
+  applyOffset(true);
+  window.addEventListener("resize", function () {
+    measure();
+    applyOffset(document.body.classList.contains("is-banner-slide"));
+  });
 
   var swiper = new Swiper(el, {
     direction: "vertical",
@@ -631,18 +799,23 @@ document.addEventListener("DOMContentLoaded", function () {
     on: {
       init: function () {
         var s = this.slides[this.activeIndex];
-        var md = prepareSlide(s);
-        // 等 Swiper 完成初始渲染再触发，避免与入场动画错位
+        // 首屏：等一帧让布局稳定后再播放动画
         requestAnimationFrame(function () {
-          triggerSlide(s, md);
+          var md = triggerSlide(s);
+          if (s && s.dataset.slide === "about") {
+            setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
+          }
         });
         syncTopbar(this.activeIndex);
+        bindBanner(document.getElementById("homeBanner"));
       },
       slideChangeTransitionEnd: function () {
-        // 切换完全结束后才触发新屏动画，确保每次进入都重新播放
         var s = this.slides[this.activeIndex];
-        var md = prepareSlide(s);
-        triggerSlide(s, md);
+        var md = triggerSlide(s);
+        // 三圆环只在首次进入 about 屏时播放
+        if (s && s.dataset.slide === "about") {
+          setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
+        }
         syncTopbar(this.activeIndex);
       },
     },
