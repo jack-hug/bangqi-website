@@ -156,23 +156,34 @@ body.home-v1 #site-nav {
   min-height: 480px;
 }
 .banner-ph { position: relative; overflow: hidden; }
-/* 图片容器负责 Ken Burns 缓慢缩放；用 will-change 提升为合成层避免卡顿 */
+
+/* ------------------------------------------------------------------
+   Banner 动态层：图片 + 遮罩各自独立成层，由 JS 用 WAAPI 分别驱动。
+   分层的原因：
+   1) 图片单独承担「缓慢巡航」的缩放 + 摇移，遮罩不跟着缩放，
+      否则遮罩渐变会一起被拉伸，画面明暗关系会漂移；
+   2) 遮罩单独做明暗推移，让静态素材也产生「光线在变」的生命感，
+      这是单一缩放给不了的层次；
+   3) 文案层完全静止 —— 文字跟着缩放会糊，动图不动字才显高级。
+   ------------------------------------------------------------------ */
 .banner-ph > img {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
-  transform: scale(1);
+  /* 基础 scale 略大于 1，为位移留出余量 —— 巡航过程中任何时刻
+     都不会因为图片被移开而露出容器边缘的空白 */
+  transform: scale(1.06);
   transform-origin: center center;
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-/* 激活中的 banner 图片由 JS 用 Web Animations API 播放缓慢放大（Ken Burns）。
-   scale(1) → scale(1.12)，时长 9.5s。
-   这里只保留硬件加速相关的属性，动画本身不写在 CSS 里，
-   以避免「CSS animation + forwards」重启不可靠导致的放大再缩小问题。 */
-.banner-ph > img { transform: scale(1); transform-origin: center center; }
-.banner-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%); }
+.banner-shade {
+  position: absolute; inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%);
+  will-change: opacity;
+}
 .banner-caption { position: relative; z-index: 2; color: #fff; max-width: 760px; padding: 0 1rem; }
 .banner-kicker { display: inline-block; font-size: .95rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .45rem 1.4rem; margin-bottom: 1.6rem; }
 .banner-caption h2 { font-size: clamp(2.4rem, 5.6vw, 4.2rem); font-weight: 900; line-height: 1.22; margin-bottom: 1.4rem; }
@@ -181,9 +192,21 @@ body.home-v1 #site-nav {
 .banner-caption .btn:hover { background: var(--bq-red-2); transform: translateY(-2px); }
 /* banner 下方的长条分页器已按要求移除 */
 #homeBanner .carousel-indicators { display: none !important; }
-/* carousel-fade 的默认过渡设为更平滑的 1.1s 交叉淡入 */
+/* ------------------------------------------------------------------
+   切换过渡：推移 + 视差
+   新图从下往上推入，旧图同时反向慢移（视差）。方向与整站「向下滚动翻页」
+   的纵向语言一致，切换时形成统一的叙事感，而不是单纯的交叉淡入。
+   由 JS 用 WAAPI 驱动，关闭 Bootstrap 自带的 opacity 过渡以免互相打架。
+   ------------------------------------------------------------------ */
 .home-slide-banner .carousel-fade .carousel-item {
-  transition: opacity 1.1s cubic-bezier(.4,0,.2,1);
+  transition: none;
+}
+/* 过渡期间旧图整层轻微上移，与新图的推入形成视差纵深 */
+.home-slide-banner .carousel-item.bq-leaving {
+  z-index: 1;
+}
+.home-slide-banner .carousel-item.bq-entering {
+  z-index: 2;
 }
 
 /* ============ 公司简介（slide 2） ============ */
@@ -840,44 +863,170 @@ document.addEventListener("DOMContentLoaded", function () {
      2) 用 WAAPI 播放而非 CSS animation + forwards，避免「还原再重放」
         这类不可靠的重启行为
      ------------------------------------------------------------------ */
-  var KB_DUR = 9500;   // 与 data-bs-interval(4000) 相比更长，保证全程连贯
+  /* ------------------------------------------------------------------
+     Banner 动态：缓慢巡航（慢速推近 + 横向摇移 + 明暗推移）
+     ------------------------------------------------------------------
+     与旧实现（单纯 scale 1 → 1.12，9.5s ease-out 后停住）的区别：
+     · 时长刻意长于切换间隔 → 画面被切走时仍在运动中，永不停顿，
+       交接更自然，也避免「推完了干等着」的呆滞感
+     · 叠加横向摇移 → 有方向感，不再只是向心推近（那样画面显平）
+     · 遮罩层独立做明暗推移 → 静态素材也产生「光线在变」的生命感
+     · 四张图使用不同的时长与位移方向 → 打破「模板在重复同一个动作」的观感，
+       这是消除机械感最有效的一招
+     ------------------------------------------------------------------ */
+  var CRUISE = [
+    { dur: 17000, zoom: 1.20, dx: -2.6, dy: -1.4 },  // 推近向左上
+    { dur: 15000, zoom: 1.16, dx:  2.4, dy: -1.8 },  // 推近向右上
+    { dur: 19000, zoom: 1.22, dx: -2.0, dy:  1.6 },  // 推近向左下
+    { dur: 16000, zoom: 1.17, dx:  2.8, dy:  1.2 }   // 推近向右下
+  ];
+  var SHADE_MIN = 0.72;      // 遮罩明暗推移的最暗系数
+  var PARALLAX_MS = 1200;    // 推移过渡时长
+  var PARALLAX_EASE = "cubic-bezier(.4,0,.2,1)";
 
-  function stopAllKenBurns(banner) {
-    banner.querySelectorAll(".banner-ph > img").forEach(function (im) {
-      if (im._kbAnim) { try { im._kbAnim.cancel(); } catch (e) {} im._kbAnim = null; }
-      im.style.transform = "";
-      im.style.animation = "";
-    });
+  /* 取消某个动画层上的所有动画并清除内联残留 */
+  function killAnims(node) {
+    if (!node) return;
+    (node._bqAnims || []).forEach(function (a) { try { a.cancel(); } catch (e) {} });
+    node._bqAnims = [];
+    node.style.transform = "";
+    node.style.opacity = "";
   }
 
-  function startKenBurns(item) {
+  /* 停止某张 banner 图上所有动态（图片巡航 + 遮罩明暗） */
+  function stopCruise(item) {
     if (!item) return;
+    killAnims(item.querySelector(".banner-ph > img"));
+    killAnims(item.querySelector(".banner-shade"));
+  }
+
+  /* 清掉整个 banner 里所有图的动态（切换开始前调用，避免新旧两张同时跑） */
+  function stopAllCruise(bannerEl) {
+    if (!bannerEl) return;
+    bannerEl.querySelectorAll(".carousel-item").forEach(stopCruise);
+  }
+
+  /* 按索引取巡航参数：图不够 4 张时循环取用，保证错落感。
+     ★ 注意 bannerEl 必须由调用方传入 —— 不能依赖闭包里的同名变量 */
+  function cruiseOf(bannerEl, item) {
+    var items = bannerEl ? bannerEl.querySelectorAll(".carousel-item") : [];
+    var i = Array.prototype.indexOf.call(items, item);
+    if (i < 0) i = 0;
+    return CRUISE[i % CRUISE.length];
+  }
+
+  /* 给一张图启动缓慢巡航 */
+  function startCruise(bannerEl, item) {
+    if (!item) return;
+    var cfg = cruiseOf(bannerEl, item);
     var img = item.querySelector(".banner-ph > img");
-    if (!img) return;
-    if (img._kbAnim) { try { img._kbAnim.cancel(); } catch (e) {} }
-    // 该图从 scale(1) 缓慢放大到 scale(1.12)
-    img._kbAnim = img.animate(
+    var shade = item.querySelector(".banner-shade");
+
+    if (img) {
+      killAnims(img);
+      img._bqAnims = [img.animate(
+        [
+          { transform: "scale(1.06) translate(0, 0)" },
+          { transform: "scale(" + cfg.zoom + ") translate(" + cfg.dx + "%, " + cfg.dy + "%)" }
+        ],
+        { duration: cfg.dur, easing: "cubic-bezier(.25,.1,.25,1)", fill: "forwards" }
+      )];
+    }
+
+    if (shade) {
+      killAnims(shade);
+      // 明暗推移：周期取巡航时长的一部分，循环往复，与缩放节奏错开
+      shade._bqAnims = [shade.animate(
+        [
+          { opacity: 1 },
+          { opacity: SHADE_MIN },
+          { opacity: 1 }
+        ],
+        {
+          duration: Math.round(cfg.dur * 0.68),
+          easing: "ease-in-out",
+          fill: "forwards",
+          iterations: Infinity,
+          direction: "alternate"
+        }
+      )];
+    }
+  }
+
+  /* 切换过渡：新图推移入场 + 旧图反向视差退出
+     两套动画都在 .carousel-item 外层容器上，与内层 <img> 的巡航互不干扰。 */
+  function transitionBanner(bannerEl, next, prev) {
+    if (!bannerEl || !next) return;
+    if (prev === next) return;
+
+    if (prev) prev.classList.add("bq-leaving");
+    next.classList.add("bq-entering");
+
+    // 新图：从下往上推入，同时淡入（Bootstrap 的 fade 过渡已在 CSS 中关闭）
+    next.animate(
       [
-        { transform: "scale(1)" },
-        { transform: "scale(1.12)" }
+        { transform: "translateY(100%)", opacity: 0 },
+        { transform: "translateY(0)", opacity: 1 }
       ],
-      { duration: KB_DUR, easing: "ease-out", fill: "forwards" }
+      { duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both" }
     );
+
+    // 旧图：反向向上慢移约 4% 并轻微放大，同时淡出，形成视差纵深
+    if (prev) {
+      var leaving = prev.animate(
+        [
+          { transform: "translateY(0) scale(1)", opacity: 1 },
+          { transform: "translateY(-4%) scale(1.03)", opacity: 0 }
+        ],
+        { duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both" }
+      );
+      leaving.onfinish = function () {
+        prev.classList.remove("bq-leaving");
+        try { leaving.cancel(); } catch (e) {}
+      };
+    }
+
+    setTimeout(function () {
+      next.classList.remove("bq-entering");
+    }, PARALLAX_MS + 60);
   }
 
   function bindBanner(banner) {
     if (!banner) return;
-    // 首张立即开始
-    startKenBurns(banner.querySelector(".carousel-item.active"));
+    // 首张立即开始巡航
+    startCruise(banner, banner.querySelector(".carousel-item.active"));
 
-    // Bootstrap carousel 切图：先清掉所有图的动画，再给新图启动
-    banner.addEventListener("slide.bs.carousel", function () {
-      // slide 事件在切换开始时触发，此时先停掉全部动画，避免交叉干扰
-      stopAllKenBurns(banner);
+    /* ------------------------------------------------------------------
+       ★ 切换动画：推移 + 视差
+
+       实现思路（重要）：
+       _不要_ 用 preventDefault() 去接管 Bootstrap 的切换流程。那样虽然能
+       阻止它自带的淡入，但也会连带阻止它内部的 _resetInterval()，导致
+       自动轮播在第一次切换后就再也不触发（实测踩过这个坑）。
+
+       正确做法是让 Bootstrap 完全按它自己的节奏走（它负责 .active 切换、
+       计时器续期、事件派发），我们只在它切完之后，额外在新图上叠加一层
+       「推移入场」的 WAAPI 动画，在旧图上叠加一层「反向视差退出」。
+       两层动画作用的都是 .carousel-item 这个外层容器，
+       而巡航动画作用在内层的 <img> / .banner-shade 上，
+       两套动画层级不同，互不干扰。
+
+       为了让推移可见，需要在 CSS 里关掉 carousel-fade 自带的 opacity 过渡，
+       改由我们显式控制两层的不透明度。
+       ------------------------------------------------------------------ */
+    banner.addEventListener("slide.bs.carousel", function (ev) {
+      // 切换一开始就停掉全部巡航，避免新旧两张的缩放同时跑
+      stopAllCruise(banner);
     });
+
     banner.addEventListener("slid.bs.carousel", function (ev) {
-      // 切换完成后启动新图的缩放
-      startKenBurns(ev.relatedTarget);
+      var next = ev.relatedTarget;
+      var prev = window.bqPrevBannerItem;
+      if (next) {
+        transitionBanner(banner, next, prev);
+        startCruise(banner, next);
+      }
+      window.bqPrevBannerItem = next;
     });
 
     /* ★ 不做任何 mouseenter/mouseleave 干预：
