@@ -783,14 +783,26 @@ document.addEventListener("DOMContentLoaded", function () {
     return "translateY(40px)";
   }
 
+  /* 取消某元素上「所有」WAAPI 动画。
+     ★ 不能只认自己存的 _bqAnim 引用 —— 动画播完后 _bqAnim 会被置空，
+       但动画对象本身仍带着 fill 效果存活。此时只改内联样式是盖不住它的，
+       必须用 getAnimations() 把它们一并取消。 */
+  function killAnimsOn(e) {
+    if (e._bqAnim) { try { e._bqAnim.cancel(); } catch (err) {} e._bqAnim = null; }
+    if (typeof e.getAnimations === "function") {
+      e.getAnimations().forEach(function (a) { try { a.cancel(); } catch (err) {} });
+    }
+  }
+
   /* 把某屏内所有 .slide-enter 元素「瞬间」摆回初始位置（不可见态）。
      ★ 必须在版块「开始滑入之前」调用，否则用户会先看到内容在原位、
-       然后突然被弹回起点再滑进来 —— 这正是之前「二次进入时先在原位
-       又弹一次」的根因。 */
+       然后突然被弹回起点再滑进来。
+     ★ 且每次导航只允许调用一次 —— 被反复调用会把刚播出的入场动画
+       取消掉，内容会永远停在隐藏态（footer 文字消失就是这个原因）。 */
   function resetSlide(slide) {
     if (!slide) return;
     slide.querySelectorAll(".slide-enter").forEach(function (e) {
-      if (e._bqAnim) { try { e._bqAnim.cancel(); } catch (err) {} e._bqAnim = null; }
+      killAnimsOn(e);
       e.style.transition = "none";
       e.style.opacity = "0";
       e.style.transform = initialTransform(e);
@@ -835,12 +847,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       );
       e._bqAnim = anim;
-      // 动画结束后清掉内联样式，交回 CSS 控制（避免长期残留）
+      /* ★ 动画结束后必须把「已入场」的最终态写进内联样式，再取消动画对象。
+         绝不能像之前那样把内联样式清空「交回 CSS 控制」——
+         CSS 里 .slide-enter 的默认态是 opacity:0，
+         内联样式一旦清空、动画对象一旦被取消，元素会立刻掉回隐藏态，
+         表现为「内容显示一下就消失」，甚至永久不可见。 */
       anim.onfinish = function () {
-        e.style.transition = "";
-        e.style.opacity = "";
-        e.style.transform = "";
         e._bqAnim = null;
+        e.style.transition = "none";
+        e.style.opacity = "1";
+        e.style.transform = "translateX(0) translateY(0)";
+        try { anim.cancel(); } catch (err) {}
       };
     });
 
@@ -993,6 +1010,36 @@ document.addEventListener("DOMContentLoaded", function () {
     applyOffset(!(topbar && topbar.classList.contains("tb-hide")));
   });
 
+  /* ------------------------------------------------------------------
+     入场动画调度
+     ------------------------------------------------------------------
+     ★ 为什么不用 beforeTransitionStart：
+       实测发现 Swiper 内部的「无动画重定位」也会 emit 它 ——
+       .home-swiper 的 top 带 450ms 过渡，topbar 显隐时该元素高度会逐帧
+       变化，Swiper 默认开启的 ResizeObserver 每帧触发一次 resize，
+       进而每帧调 slideTo/slideToClosest 并 emit beforeTransitionStart。
+       挂在它上面会导致「刚播出的入场动画被连续取消」，
+       内容闪一下就消失（footer 甚至永久不可见）。
+
+     改用 slideChange —— activeIndex 真正变化时才触发，一次导航只来一次，
+     且时机最早（此时目标屏还在视口外滑入中，用户看不到重置这一帧）。
+     再用 lastEnterIdx 兜一层：不因任何重复信号重播。
+     ------------------------------------------------------------------ */
+  var lastEnterIdx = -1;     // 上一次「真正进入」的屏下标
+  var enterIdx = -1;         // 待播放入场的屏下标
+  var enterFallback = null;  // 兜底定时器：保证内容最终一定可见
+
+  /* 播放某屏的入场弹入（含 about 屏三圆环的时序） */
+  function playEnter(s) {
+    if (!s) return;
+    var md = playSlide(s);
+    var key = s.dataset.slide || "";
+    // 三圆环只在首次进入 about 屏时播放
+    if (key === "about") {
+      setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
+    }
+  }
+
   var swiper = new Swiper(el, {
     direction: "vertical",
     slidesPerView: 1,
@@ -1001,16 +1048,12 @@ document.addEventListener("DOMContentLoaded", function () {
     speed: 700,
     pagination: { el: ".swiper-pagination", clickable: true },
     a11y: { enabled: true },
+    /* ★ 必须关掉 ResizeObserver（Swiper 默认开启）。
+       见上方说明：它会把「topbar 显隐导致的容器高度变化」误判为窗口尺寸
+       变化，从而每帧做一次重定位，是内容被反复重置的根源。
+       关掉后 Swiper 退回监听 window resize，真实窗口缩放照常响应。 */
+    resizeObserver: false,
     on: {
-      /* ★ 关键：在版块「开始滑入之前」就把内容置为不可见态。
-         这样用户看不到「内容已在原位又被弹回」的过程，
-         每次进入都等同于第一次：从不可见处弹入到原位。
-         beforeTransitionStart 比 slideChange 更早，且拿到的
-         activeIndex 已经是目标屏，正是我们需要的时机。 */
-      beforeTransitionStart: function () {
-        var s = this.slides[this.activeIndex];
-        if (s) resetSlide(s);
-      },
       init: function () {
         var s = this.slides[this.activeIndex];
         var key = s ? (s.dataset.slide || "") : "";
@@ -1022,24 +1065,35 @@ document.addEventListener("DOMContentLoaded", function () {
         applyOffset(key === "banner" || key === "footer");
         // 首屏：先把内容置为不可见态，再等一帧播放
         resetSlide(s);
-        requestAnimationFrame(function () {
-          var md = playSlide(s);
-          if (key === "about") {
-            setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
-          }
-        });
+        requestAnimationFrame(function () { playEnter(s); });
         bindBanner(document.getElementById("homeBanner"));
       },
+      /* 时机一：activeIndex 真正变化 → 把目标屏内容置为不可见。 */
+      slideChange: function () {
+        var sw = this;
+        var idx = sw.activeIndex;
+        if (idx === lastEnterIdx) return;   // 维护性重定位，不是真实导航
+        lastEnterIdx = idx;
+        var s = sw.slides[idx];
+        if (!s) return;
+        resetSlide(s);
+        enterIdx = idx;
+        // 兜底：万一 slideChangeTransitionEnd 没触发，也要保证内容最终可见
+        clearTimeout(enterFallback);
+        enterFallback = setTimeout(function () {
+          if (enterIdx === idx) { enterIdx = -1; playEnter(s); }
+        }, sw.params.speed + 700);
+      },
+      /* 时机二：滑入到位 → 播放弹入。 */
       slideChangeTransitionEnd: function () {
-        var s = this.slides[this.activeIndex];
-        // 此时该屏已滑入到位，只负责播放弹入（初始态已在 beforeTransitionStart 设好）
-        var md = playSlide(s);
-        var key = s ? (s.dataset.slide || "") : "";
-        // 三圆环只在首次进入 about 屏时播放
-        if (key === "about") {
-          setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
+        var idx = this.activeIndex;
+        var s = this.slides[idx];
+        if (idx === enterIdx) {
+          enterIdx = -1;
+          clearTimeout(enterFallback);
+          playEnter(s);
         }
-        syncTopbar(key);
+        syncTopbar(s ? (s.dataset.slide || "") : "");
       },
     },
   });
