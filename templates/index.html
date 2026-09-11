@@ -5,16 +5,16 @@
 <link href="https://unpkg.com/swiper@11.2.10/swiper-bundle.min.css" rel="stylesheet">
 <style>
 /* ============ v1.1 主页专用：home-v1 + is-banner-slide 由 JS 控制 ============ */
-body.home-v1 #site-topbar { display: none; }
-body.home-v1.is-banner-slide #site-topbar { display: block; }
+/* topbar 显隐：默认首页隐藏，仅 banner slide 由 JS 控 display */
+body.home-v1 #site-footer { display: none; }
 body.home-v1 #site-nav {
   background: rgba(255,255,255,.55);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.06);
 }
-body.home-v1 #site-footer { display: none; }  /* footer 在 slide 6 内 */
 body.home-v1 { overflow: hidden; background: #fff; }
+/* JS 会在 v1.1 脚本里通过 setProperty 强制覆盖 display，保证不依赖 CSS 优先级 */
 
 /* ============ Swiper 全屏容器 ============ */
 .home-swiper {
@@ -97,48 +97,48 @@ body.home-v1 { overflow: hidden; background: #fff; }
 .banner-ph { position: relative; overflow: hidden; }
 .banner-ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .banner-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%); }
-.banner-caption { position: relative; z-index: 2; color: #fff; max-width: 620px; padding: 0 1rem; }
-.banner-kicker { display: inline-block; font-size: .8rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .35rem 1.1rem; margin-bottom: 1.3rem; }
-.banner-caption h2 { font-size: clamp(2rem, 4.4vw, 3.2rem); font-weight: 900; line-height: 1.28; margin-bottom: 1rem; }
-.banner-caption p { color: rgba(255,255,255,.82); font-size: 1.02rem; margin-bottom: 1.8rem; }
-.banner-caption .btn { display: inline-block; padding: .65rem 1.5rem; background: var(--bq-red); color: #fff; border-radius: 999px; text-decoration: none; font-weight: 600; transition: background .2s, transform .2s; }
+.banner-caption { position: relative; z-index: 2; color: #fff; max-width: 760px; padding: 0 1rem; }
+.banner-kicker { display: inline-block; font-size: .95rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .45rem 1.4rem; margin-bottom: 1.6rem; }
+.banner-caption h2 { font-size: clamp(2.4rem, 5.6vw, 4.2rem); font-weight: 900; line-height: 1.22; margin-bottom: 1.4rem; }
+.banner-caption p { color: rgba(255,255,255,.82); font-size: 1.18rem; margin-bottom: 2.2rem; }
+.banner-caption .btn { display: inline-block; padding: .85rem 2rem; background: var(--bq-red); color: #fff; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 1.02rem; transition: background .2s, transform .2s; }
 .banner-caption .btn:hover { background: var(--bq-red-2); transform: translateY(-2px); }
-#homeBanner .carousel-indicators { margin-bottom: 1.4rem; z-index: 5; }
-#homeBanner .carousel-indicators [data-bs-target] { width: 34px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
+#homeBanner .carousel-indicators { margin-bottom: 2rem; z-index: 5; }
+#homeBanner .carousel-indicators [data-bs-target] { width: 38px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
 #homeBanner .carousel-indicators .active { background: var(--bq-gold); }
 
 /* ============ 公司简介（slide 2） ============ */
-.intro-text { color: #4a5852; line-height: 2; font-size: .95rem; text-align: justify; }
-.factory-ph { height: 360px; position: relative; }
+.intro-text { color: #4a5852; line-height: 2.05; font-size: 1.05rem; text-align: justify; }
+.factory-ph { height: 460px; position: relative; }
 .factory-ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .factory-indicators { margin-bottom: .8rem; }
-.factory-indicators [data-bs-target] { width: 26px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
+.factory-indicators [data-bs-target] { width: 28px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
 .factory-indicators .active { background: var(--bq-gold); }
 .shadow-bq { box-shadow: var(--bq-shadow-lg); }
 .sec-kicker.not-center::before { display: none; }
 
 /* ---- 三圆环 ---- */
-.stat-row { display: flex; justify-content: center; align-items: flex-start; gap: 2.2rem; margin-top: 2rem; flex-wrap: wrap; width: 100%; }
+.stat-row { display: flex; justify-content: center; align-items: flex-start; gap: 2.8rem; margin-top: 2.6rem; flex-wrap: wrap; width: 100%; }
 .stat-row-center { text-align: center; }
-.stat-circle { text-align: center; display: flex; flex-direction: column; align-items: center; gap: .85rem; }
+.stat-circle { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.05rem; }
 .stat-card {
-  position: relative; width: 124px; height: 124px;
+  position: relative; width: 168px; height: 168px;
   background: #fff; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 18px rgba(230, 33, 41, .08);
+  box-shadow: 0 10px 26px rgba(230, 33, 41, .10);
   transition: transform .35s cubic-bezier(.2,.8,.3,1), box-shadow .35s;
 }
-.stat-circle:hover .stat-card { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(230, 33, 41, .18); }
+.stat-circle:hover .stat-card { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(230, 33, 41, .22); }
 .stat-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.stat-ring-bg, .stat-ring-fg { fill: none; stroke-width: 6; stroke-linecap: round; }
+.stat-ring-bg, .stat-ring-fg { fill: none; stroke-width: 5; stroke-linecap: round; }
 .stat-ring-bg { stroke: rgba(230, 33, 41, .10); }
 .stat-ring-fg { stroke: var(--bq-red); stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset .15s linear; }
 .stat-circle:hover .stat-ring-fg { stroke: var(--bq-red-2); }
-.stat-num-wrap { position: relative; z-index: 2; padding: 0 4px; display: flex; align-items: baseline; justify-content: center; gap: 2px; font-family: "Noto Serif SC", serif; }
-.stat-num { font-size: 1.85rem; font-weight: 900; color: var(--bq-red); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
-.stat-unit { font-size: .72rem; color: var(--bq-red-2); font-weight: 700; }
-.stat-label { font-size: .9rem; font-weight: 600; color: var(--bq-ink); letter-spacing: .04em; }
-@media (max-width: 575.98px) { .stat-card { width: 96px; height: 96px; } .stat-num { font-size: 1.4rem; } .stat-unit { font-size: .62rem; } }
+.stat-num-wrap { position: relative; z-index: 2; padding: 0 6px; display: flex; align-items: baseline; justify-content: center; gap: 3px; font-family: "Noto Serif SC", serif; }
+.stat-num { font-size: 2.5rem; font-weight: 900; color: var(--bq-red); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
+.stat-unit { font-size: .92rem; color: var(--bq-red-2); font-weight: 700; }
+.stat-label { font-size: 1.02rem; font-weight: 600; color: var(--bq-ink); letter-spacing: .04em; }
+@media (max-width: 575.98px) { .stat-card { width: 120px; height: 120px; } .stat-num { font-size: 1.75rem; } .stat-unit { font-size: .72rem; } }
 
 /* ============ 八大剂型（slide 3） ============ */
 .form-card {
@@ -150,28 +150,28 @@ body.home-v1 { overflow: hidden; background: #fff; }
 .form-card:hover .form-img-wrap, .form-card:hover .form-ph { filter: blur(5px) opacity(.45); transform: scale(1.05); }
 .form-overlay {
   position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: .45rem;
+  align-items: center; justify-content: center; gap: .65rem;
   background: linear-gradient(160deg, rgba(154,14,20,.88), rgba(154,14,20,.72));
   color: #fff; opacity: 0; transition: opacity .35s; backdrop-filter: blur(2px);
-  padding: 1rem; text-align: center;
+  padding: 1.2rem; text-align: center;
 }
 .form-card:hover .form-overlay { opacity: 1; }
-.form-name { font-family: "Noto Serif SC", serif; font-size: 1.5rem; font-weight: 900; }
-.form-desc { font-size: .8rem; color: rgba(255,255,255,.8); letter-spacing: .08em; }
-.form-go { margin-top: .5rem; font-size: .8rem; border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: .3rem 1.1rem; }
+.form-name { font-family: "Noto Serif SC", serif; font-size: 1.85rem; font-weight: 900; }
+.form-desc { font-size: .92rem; color: rgba(255,255,255,.85); letter-spacing: .08em; }
+.form-go { margin-top: .6rem; font-size: .88rem; border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: .35rem 1.25rem; }
 
 /* ============ 邦琪资讯（slide 4） ============ */
-.news-grid { display: grid; grid-template-columns: 1.36fr 1fr; gap: 1.6rem; align-items: stretch; }
-.news-feature { position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow-lg); min-height: 460px; background: #0f2a22; }
+.news-grid { display: grid; grid-template-columns: 1.36fr 1fr; gap: 1.8rem; align-items: stretch; }
+.news-feature { position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow-lg); min-height: 560px; background: #0f2a22; }
 .nf-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .65s ease; pointer-events: none; }
 .nf-slide.on { opacity: 1; pointer-events: auto; }
 .nf-media { position: absolute; inset: 0; }
 .nf-media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.nf-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 3rem 2rem 2rem; background: linear-gradient(to top, rgba(60,12,14,.95) 8%, rgba(60,12,14,.6) 52%, transparent); color: #fff; }
-.nf-cat { display: inline-block; font-size: .72rem; font-weight: 700; color: #fff; background: var(--bq-gold); border-radius: 999px; padding: .22rem .8rem; letter-spacing: .08em; }
-.nf-title { font-family: "Noto Serif SC", serif; font-size: clamp(1.2rem, 2.1vw, 1.55rem); font-weight: 900; line-height: 1.48; margin: .7rem 0 .55rem; }
-.nf-excerpt { font-size: .86rem; color: rgba(255,255,255,.78); line-height: 1.75; margin: 0 0 .9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.nf-meta { font-size: .76rem; color: rgba(255,255,255,.62); display: flex; justify-content: space-between; align-items: center; }
+.nf-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 3.4rem 2.4rem 2.4rem; background: linear-gradient(to top, rgba(60,12,14,.95) 8%, rgba(60,12,14,.6) 52%, transparent); color: #fff; }
+.nf-cat { display: inline-block; font-size: .82rem; font-weight: 700; color: #fff; background: var(--bq-gold); border-radius: 999px; padding: .26rem .95rem; letter-spacing: .08em; }
+.nf-title { font-family: "Noto Serif SC", serif; font-size: clamp(1.45rem, 2.5vw, 1.95rem); font-weight: 900; line-height: 1.45; margin: .85rem 0 .65rem; }
+.nf-excerpt { font-size: .98rem; color: rgba(255,255,255,.82); line-height: 1.75; margin: 0 0 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nf-meta { font-size: .85rem; color: rgba(255,255,255,.7); display: flex; justify-content: space-between; align-items: center; }
 .nf-meta em { font-style: normal; color: #e6c47c; font-weight: 600; }
 .nf-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.16); z-index: 5; }
 .nf-progress-bar { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--bq-gold), #e6c47c); }
@@ -179,20 +179,20 @@ body.home-v1 { overflow: hidden; background: #fff; }
 @keyframes nfbar { from { width: 0; } to { width: 100%; } }
 
 .news-side { display: flex; flex-direction: column; border: 1px solid var(--bq-line); border-radius: var(--bq-radius); background: #fff; overflow: hidden; box-shadow: var(--bq-shadow); }
-.ns-head { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.4rem; background: linear-gradient(135deg, var(--bq-red), var(--bq-red-2)); color: #fff; font-weight: 700; letter-spacing: .08em; font-size: .9rem; }
-.ns-more { color: rgba(255,255,255,.78); font-size: .78rem; font-weight: 400; }
+.ns-head { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.6rem; background: linear-gradient(135deg, var(--bq-red), var(--bq-red-2)); color: #fff; font-weight: 700; letter-spacing: .08em; font-size: 1.02rem; }
+.ns-more { color: rgba(255,255,255,.85); font-size: .88rem; font-weight: 400; }
 .ns-more:hover { color: #e6c47c; }
-.ns-item { flex: 1; display: flex; gap: .95rem; align-items: center; padding: .85rem 1.4rem; border-bottom: 1px solid var(--bq-line); border-left: 3px solid transparent; transition: background .25s, border-color .25s; min-height: 78px; }
+.ns-item { flex: 1; display: flex; gap: 1.05rem; align-items: center; padding: 1.05rem 1.6rem; border-bottom: 1px solid var(--bq-line); border-left: 3px solid transparent; transition: background .25s, border-color .25s; min-height: 96px; }
 .ns-item:last-child { border-bottom: none; }
-.ns-num { font-size: 1.5rem; font-weight: 900; color: #cdd8d2; line-height: 1; font-variant-numeric: tabular-nums; transition: color .25s; flex: none; }
+.ns-num { font-size: 1.85rem; font-weight: 900; color: #cdd8d2; line-height: 1; font-variant-numeric: tabular-nums; transition: color .25s; flex: none; }
 .ns-item.on .ns-num { color: var(--bq-gold); }
 .ns-item.on { background: var(--bq-red-soft); border-left-color: var(--bq-gold); }
 .ns-item:hover { background: var(--bq-red-soft); }
 .ns-body { min-width: 0; flex: 1; }
-.ns-title { display: block; font-size: .9rem; font-weight: 600; color: var(--bq-ink); line-height: 1.55; margin-bottom: .25rem; transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ns-title { display: block; font-size: 1.02rem; font-weight: 600; color: var(--bq-ink); line-height: 1.55; margin-bottom: .35rem; transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ns-item.on .ns-title { color: var(--bq-red); }
-.ns-meta { font-size: .72rem; color: var(--bq-gray); }
-@media (max-width: 991.98px) { .news-grid { grid-template-columns: 1fr; } .news-feature { min-height: 360px; } }
+.ns-meta { font-size: .82rem; color: var(--bq-gray); }
+@media (max-width: 991.98px) { .news-grid { grid-template-columns: 1fr; } .news-feature { min-height: 420px; } }
 
 /* ============ 走近邦琪（slide 5） ============ */
 .corp-card {
@@ -204,50 +204,50 @@ body.home-v1 { overflow: hidden; background: #fff; }
 .corp-ph, .corp-img-wrap { position: relative; height: auto; }
 .corp-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
 .corp-img-wrap, .corp-ph { aspect-ratio: 37 / 65; }
-.corp-info { padding: 1rem 1.3rem 1.25rem; }
-.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.05rem; font-weight: 700; color: var(--bq-red); margin-bottom: .35rem; }
-.corp-info p { font-size: .83rem; color: var(--bq-gray); margin: 0; line-height: 1.5; }
+.corp-info { padding: 1.4rem 1.6rem 1.6rem; }
+.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.32rem; font-weight: 700; color: var(--bq-red); margin-bottom: .5rem; }
+.corp-info p { font-size: .95rem; color: var(--bq-gray); margin: 0; line-height: 1.65; }
 
 /* ============ Footer（slide 6） ============ */
 .home-footer {
   width: 100%;
-  padding: 3rem 0 1.5rem;
+  padding: 3.6rem 0 2rem;
 }
 .home-footer .footer-cols h6 {
-  color: #fff; font-size: .9rem; font-weight: 700;
-  letter-spacing: .12em; margin-bottom: 1rem;
-  position: relative; padding-bottom: .6rem;
+  color: #fff; font-size: 1.02rem; font-weight: 700;
+  letter-spacing: .12em; margin-bottom: 1.15rem;
+  position: relative; padding-bottom: .7rem;
 }
 .home-footer .footer-cols h6::after {
   content: ""; position: absolute; left: 0; bottom: 0;
-  width: 24px; height: 2px; background: var(--bq-red);
+  width: 28px; height: 2px; background: var(--bq-red);
 }
 .home-footer .footer-links { list-style: none; padding: 0; margin: 0; }
-.home-footer .footer-links li { margin-bottom: .45rem; }
-.home-footer .footer-links a { color: rgba(255,255,255,.65); text-decoration: none; font-size: .85rem; transition: color .2s; }
+.home-footer .footer-links li { margin-bottom: .55rem; }
+.home-footer .footer-links a { color: rgba(255,255,255,.7); text-decoration: none; font-size: .95rem; transition: color .2s; }
 .home-footer .footer-links a:hover { color: var(--bq-red); }
-.home-footer .footer-info { color: rgba(255,255,255,.7); font-size: .85rem; }
+.home-footer .footer-info { color: rgba(255,255,255,.75); font-size: .95rem; }
 .home-footer .qr-block {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 60px; height: 60px; background: rgba(255,255,255,.08);
+  width: 70px; height: 70px; background: rgba(255,255,255,.08);
   border-radius: 8px; color: rgba(255,255,255,.6);
 }
-.home-footer .qr-tip { font-size: .82rem; color: rgba(255,255,255,.65); margin-left: .8rem; }
-.home-footer .qr-tip small { display: block; font-size: .72rem; color: rgba(255,255,255,.45); margin-top: .15rem; }
+.home-footer .qr-tip { font-size: .92rem; color: rgba(255,255,255,.7); margin-left: .9rem; }
+.home-footer .qr-tip small { display: block; font-size: .8rem; color: rgba(255,255,255,.5); margin-top: .2rem; }
 .home-footer .footer-bottom {
-  margin-top: 2.4rem; padding-top: 1.4rem;
+  margin-top: 2.8rem; padding-top: 1.6rem;
   border-top: 1px solid rgba(255,255,255,.1);
-  color: rgba(255,255,255,.5); font-size: .78rem;
+  color: rgba(255,255,255,.55); font-size: .85rem;
 }
 
 /* ============ 通用 section heading ============ */
-.sec-head { text-align: center; margin-bottom: 2.5rem; }
-.sec-kicker { font-size: .8rem; letter-spacing: .32em; color: var(--bq-red); font-weight: 700; position: relative; display: inline-block; padding-bottom: .65rem; margin-bottom: 1rem; }
-.sec-kicker::before { content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 32px; height: 2px; background: var(--bq-gold); }
-.sec-title { font-family: "Noto Serif SC", serif; font-size: clamp(1.8rem, 3.2vw, 2.4rem); font-weight: 900; color: var(--bq-ink); margin-bottom: .6rem; }
-.sec-sub { color: var(--bq-gray); font-size: .95rem; }
+.sec-head { text-align: center; margin-bottom: 3rem; }
+.sec-kicker { font-size: .92rem; letter-spacing: .32em; color: var(--bq-red); font-weight: 700; position: relative; display: inline-block; padding-bottom: .75rem; margin-bottom: 1.1rem; }
+.sec-kicker::before { content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 36px; height: 2px; background: var(--bq-gold); }
+.sec-title { font-family: "Noto Serif SC", serif; font-size: clamp(2.2rem, 3.8vw, 3rem); font-weight: 900; color: var(--bq-ink); margin-bottom: .85rem; }
+.sec-sub { color: var(--bq-gray); font-size: 1.05rem; }
 .sec-title.text-start { text-align: left; }
-.sec-kicker.not-center { padding-bottom: .65rem; }
+.sec-kicker.not-center { padding-bottom: .75rem; }
 
 /* 移动端适配 */
 @media (max-width: 767.98px) {
@@ -548,9 +548,27 @@ document.addEventListener("DOMContentLoaded", function () {
     window.bqCountersObserver = null;
   }
 
+  // 强制收起 topbar / footer 初始态，避免首屏未挂脚本前看到
+  var topbar = document.getElementById("site-topbar");
+  var footer = document.getElementById("site-footer");
+  if (topbar) topbar.style.setProperty("display", "none", "important");
+  if (footer && footer.style) footer.style.setProperty("display", "none", "important");
+
+  // banner 屏 vs 其他屏：控制 topbar 显隐（直接操作 inline display，绕开 CSS 优先级问题）
+  function syncTopbar(idx) {
+    if (!topbar) return;
+    if (idx === 0) {
+      topbar.style.setProperty("display", "block", "important");
+      document.body.classList.add("is-banner-slide");
+    } else {
+      topbar.style.setProperty("display", "none", "important");
+      document.body.classList.remove("is-banner-slide");
+    }
+  }
+
   // 给当前屏内所有 .slide-enter 设置错峰延迟
   function prepareSlide(slide) {
-    if (!slide) return;
+    if (!slide) return 0;
     var enters = slide.querySelectorAll(".slide-enter");
     var maxDelay = 0;
     enters.forEach(function (e) {
@@ -562,33 +580,44 @@ document.addEventListener("DOMContentLoaded", function () {
     return maxDelay;
   }
 
-  // 触发当前屏所有 .slide-enter 动画
+  // 触发当前屏所有 .slide-enter 动画：使用双 rAF 确保每次进入都重新播放
   function triggerSlide(slide, maxDelay) {
     if (!slide) return;
     var enters = slide.querySelectorAll(".slide-enter");
+    // 步骤 1：移除 active 类，并显式重置 transform 到初始偏移量
     enters.forEach(function (e) {
       e.classList.remove("active");
-      void e.offsetWidth;  // 强制重排
-      e.classList.add("active");
+      // 重置为初始位移态，确保浏览器真正检测到「状态变更」
+      var t = "";
+      if (e.classList.contains("from-left")) t = "translateX(-110%)";
+      else if (e.classList.contains("from-right")) t = "translateX(110%)";
+      else if (e.classList.contains("from-bottom")) t = "translateY(80px)";
+      else if (e.classList.contains("from-fade")) t = "translateY(40px)";
+      e.style.transform = t;
+      e.style.opacity = "0";
     });
-
-    // 公司简介屏：左/右滑入完成后（约 maxDelay + 0.85s）才触发 3 圆环数字动画
-    if (slide.dataset.slide === "about") {
-      var totalMs = (maxDelay + 0.9) * 1000;
-      setTimeout(function () {
-        slide.querySelectorAll(".stat-num").forEach(function (n) {
-          if (typeof window.bqAnimateCounter === "function") {
-            window.bqAnimateCounter(n);
-          }
+    // 步骤 2：双 rAF 后清除 inline style，让 CSS .active 接管
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        enters.forEach(function (e) {
+          e.style.transform = "";
+          e.style.opacity = "";
+          e.classList.add("active");
         });
-      }, totalMs);
-    }
-  }
 
-  // banner 屏 vs 其他屏：控制 topbar 显隐
-  function syncTopbar(idx) {
-    if (idx === 0) document.body.classList.add("is-banner-slide");
-    else document.body.classList.remove("is-banner-slide");
+        // 公司简介屏：左/右滑入完成后（约 maxDelay + 0.85s）才触发 3 圆环数字动画
+        if (slide.dataset.slide === "about") {
+          var totalMs = (maxDelay + 0.9) * 1000;
+          setTimeout(function () {
+            slide.querySelectorAll(".stat-num").forEach(function (n) {
+              if (typeof window.bqAnimateCounter === "function") {
+                window.bqAnimateCounter(n);
+              }
+            });
+          }, totalMs);
+        }
+      });
+    });
   }
 
   var swiper = new Swiper(el, {
@@ -603,15 +632,18 @@ document.addEventListener("DOMContentLoaded", function () {
       init: function () {
         var s = this.slides[this.activeIndex];
         var md = prepareSlide(s);
-        triggerSlide(s, md);
+        // 等 Swiper 完成初始渲染再触发，避免与入场动画错位
+        requestAnimationFrame(function () {
+          triggerSlide(s, md);
+        });
         syncTopbar(this.activeIndex);
       },
-      slideChange: function () {
-        syncTopbar(this.activeIndex);
+      slideChangeTransitionEnd: function () {
+        // 切换完全结束后才触发新屏动画，确保每次进入都重新播放
         var s = this.slides[this.activeIndex];
         var md = prepareSlide(s);
-        // 等 Swiper 切换完成再触发，避免切换中元素位置错乱
-        setTimeout(function () { triggerSlide(s, md); }, 50);
+        triggerSlide(s, md);
+        syncTopbar(this.activeIndex);
       },
     },
   });
