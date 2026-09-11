@@ -9,7 +9,7 @@
 <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
 
 <!-- 顶部信息条（首页可由 .home-v1 + .is-banner-slide 控制显隐） -->
 <div class="topbar" id="site-topbar">
