@@ -381,9 +381,13 @@ body.home-v1 #site-nav {
 <div class="swiper home-swiper" id="homeSwiper">
   <div class="swiper-wrapper">
 
-    <!-- ===== Slide 1: Banner（内部 carousel 4 秒自动切换，循环） ===== -->
+    <!-- ===== Slide 1: Banner（内部 carousel 4 秒自动切换，循环） =====
+         ★ data-bs-pause="false" 是必需的：
+         Bootstrap 5 Carousel 的 pause 默认值是 "hover"，即鼠标移入就 pause()、
+         移出才 cycle()。所以「悬停在图片上时停止自动切换」是 Bootstrap 的默认行为，
+         必须显式关掉。 -->
     <section class="swiper-slide home-slide-banner" data-slide="banner">
-      <div id="homeBanner" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
+      <div id="homeBanner" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000" data-bs-pause="false">
         <!-- 长条分页器已按要求移除 -->
         <div class="carousel-inner">
           {% for b in banners %}
@@ -732,13 +736,70 @@ document.addEventListener("DOMContentLoaded", function () {
      位置同步：把 topbar / nav / swiper 三者的位置用「单一变量」统一更新，
      避免多处 calc 取值不同步导致两条之间出现空白缝隙
      ------------------------------------------------------------------ */
-  function applyOffset(topbarOpen) {
+  var SWIPER_TOP_MS = 450;   // 与 CSS 里 .home-swiper 的 top 过渡时长保持一致
+
+  function applyOffset(topbarOpen, instant) {
     var root = document.documentElement.style;
     var tbH = topbarOpen ? TB_H : 0;
     // 导航栏顶部 = topbar 展开时下移一个 topbar 高度，否则贴顶
     root.setProperty("--nav-top", tbH + "px");
     // swiper 顶部 = topbar(若展开) + 导航栏高度 —— 精确咬合，不留缝
     root.setProperty("--swiper-top", (tbH + NAV_H) + "px");
+    // ★ 容器高度跟着变了，必须同步 Swiper 的内部尺寸（见下方说明）。
+    //   instant=true 用于「已禁用过渡」的场景（如窗口 resize），只需对齐一帧
+    syncSwiperSizeDuring(instant ? 0 : SWIPER_TOP_MS);
+  }
+
+  /* ------------------------------------------------------------------
+     ★★ Swiper 内部尺寸同步（关键修复）★★
+
+     现象：第 5 屏「走近邦琪」底边会露出下一屏（footer）的顶部，
+          露出的高度正好是一个 topbar 的高度。
+
+     根因：.home-swiper 的 top 要随 topbar 显隐变化 ——
+          banner / footer 两屏展开 topbar（top = 108px），其余屏收起（top = 76px），
+          容器高度因此相差一个 topbar 的高度（约 31~32px）。
+          Swiper 会把每一屏的行内高度写成「它自己缓存的容器高度」，
+          位移也按这个缓存高度算，而它只在 window resize 时才重新测量。
+          我们为了解决「入场动画被反复重置」把 resizeObserver 关掉了
+          （Swiper 默认开启，它会逐帧触发 slideToClosest，是那次的根源），
+          于是 topbar 收起、容器由 462 变高到 494 之后，Swiper 仍按 462 布局：
+          每屏只有 462 高，却待在 494 高的容器里 →
+          容器底部必然露出下一屏的顶部一条，露出的高度正好等于 topbar 的高度。
+
+     修法：不重新打开 resizeObserver（那会重新引入逐帧事件风暴），
+          改为在容器高度变化期间用 rAF 逐帧把 Swiper 的尺寸静默对齐：
+          updateSize → updateSlides → slideTo(当前屏, 速度 0, 不触发回调)。
+          speed 0 且 internal 的模式只改位移、不派发事件、不动动画队列，
+          因此不会干扰正在播放的版块入场动画。
+     ------------------------------------------------------------------ */
+  var sizeSyncRAF = 0;
+
+  function syncSwiperSize() {
+    var sw = window.bqHomeSwiper;
+    if (!sw || sw.destroyed) return;   // 初始化阶段 swiper 还没创建
+    if (sw.animating) return;          // 正在切换中 → 让出控制权，别截断过渡
+    sw.updateSize();
+    sw.updateSlides();
+    sw.slideTo(sw.activeIndex, 0, false, true);
+  }
+
+  /* 在 ms 时长内逐帧跟随容器高度的过渡（0 = 只对齐一帧，用于瞬时变化） */
+  function syncSwiperSizeDuring(ms) {
+    if (sizeSyncRAF) cancelAnimationFrame(sizeSyncRAF);
+    var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    var now = function () {
+      return (window.performance && performance.now) ? performance.now() : Date.now();
+    };
+    var step = function () {
+      syncSwiperSize();
+      if (now() - t0 < ms + 80) {
+        sizeSyncRAF = requestAnimationFrame(step);
+      } else {
+        sizeSyncRAF = 0;
+      }
+    };
+    sizeSyncRAF = requestAnimationFrame(step);
   }
 
   /* ------------------------------------------------------------------
@@ -955,10 +1016,12 @@ document.addEventListener("DOMContentLoaded", function () {
       window.bqPrevBannerItem = next;
     });
 
-    /* ★ 不做任何 mouseenter/mouseleave 干预：
+    /* ★ 不在这里做 mouseenter/mouseleave 干预：
        需求明确「banner 切换不应受鼠标指向影响」。
-       Bootstrap carousel 本身默认就不会因悬停而暂停，
-       之前的 pause()/cycle() 反而导致悬停时停止自动切换。
+       Bootstrap carousel 的 pause 默认值是 "hover"（会悬停暂停），
+       已在 HTML 上用 data-bs-pause="false" 显式关掉 —— 这才是正确的修法。
+       之前在这里手写 pause()/cycle() 反而会让悬停后彻底不再切换，
+       两者都不要。
        唯一保留的是「页面切到后台时暂停」，避免后台空转堆定时器。 */
     document.addEventListener("visibilitychange", function () {
       if (!window.bootstrap || !bootstrap.Carousel) return;
@@ -996,7 +1059,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.classList.add("tb-no-anim");
     measure();
     calcFormCardHeight();
-    applyOffset(wasOpen);
+    applyOffset(wasOpen, true);   // 无过渡 → 尺寸只需瞬时对齐
     void document.body.offsetHeight;
     requestAnimationFrame(function () {
       document.body.classList.remove("tb-no-anim");
@@ -1050,8 +1113,11 @@ document.addEventListener("DOMContentLoaded", function () {
     a11y: { enabled: true },
     /* ★ 必须关掉 ResizeObserver（Swiper 默认开启）。
        见上方说明：它会把「topbar 显隐导致的容器高度变化」误判为窗口尺寸
-       变化，从而每帧做一次重定位，是内容被反复重置的根源。
-       关掉后 Swiper 退回监听 window resize，真实窗口缩放照常响应。 */
+       变化，从而每帧做一次重定位 + 派发 beforeResize/resize，
+       是内容被反复重置的根源。
+       ★ 关掉后 Swiper 不再自己跟进容器高度，容器尺寸变化改由
+         applyOffset → syncSwiperSizeDuring() 显式对齐（见上方注释），
+         真实的窗口缩放仍由 Swiper 自身的 window resize 监听响应。 */
     resizeObserver: false,
     on: {
       init: function () {
