@@ -23,7 +23,8 @@ const RESOURCES = {
       {k: "subtitle", l: "副标题", t: "text"},
       {k: "btn_text", l: "按钮文字", t: "text"},
       {k: "btn_link", l: "按钮链接", t: "text"},
-      {k: "image", l: "Banner图片（1920×750）", t: "image"},
+      {k: "image", l: "Banner图片（推荐 1920×1080，16:9）", t: "image",
+       hint: "首屏是全屏铺满，图片会等比放大后裁掉少量边缘：最多上下各 85px、左右各 45px。文字、LOGO 等关键内容请放在画面中部，上下各留 90px、左右各留 50px 余量。"},
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
       {k: "sort_order", l: "排序", t: "number", def: 0},
       {k: "is_active", l: "启用", t: "checkbox", def: true},
@@ -45,7 +46,8 @@ const RESOURCES = {
     name: "厂区图片", endpoint: "/api/company-image",
     fields: [
       {k: "title", l: "图片标题", t: "text"},
-      {k: "image", l: "厂区图片（960×540）", t: "image"},
+      {k: "image", l: "厂区图片（推荐 960×720，4:3）", t: "image",
+       hint: "展示区高度固定 460px、宽度随屏幕在 444~624px 之间变化，图片按高度铺满后会裁掉两侧：宽屏几乎不裁，1366 宽笔记本单侧约 60px。主体请放在画面中间，左右各留 140px 余量可保证各桌面尺寸都完整。"},
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
       {k: "sort_order", l: "排序", t: "number", def: 0},
       {k: "is_active", l: "启用", t: "checkbox", def: true},
@@ -110,7 +112,8 @@ const RESOURCES = {
       {k: "trademark_id", l: "商标", t: "fk", fk: "trademark", fkLabel: "name"},
       {k: "func_category_id", l: "功能分类", t: "fk", fk: "func-category", fkLabel: "name"},
       {k: "spec", l: "规格", t: "text"},
-      {k: "image", l: "产品主图（480×320）", t: "image"},
+      {k: "image", l: "产品主图（推荐 800×800，1:1）", t: "image",
+       hint: "列表卡片图片区高固定 230px、宽随屏幕在 190~224px 之间变化（近似正方形）。1:1 图在宽屏下左右仅裁各约 11px，1366 宽笔记本各约 70px；手机端卡片会变宽（约 350×230）而改裁上下。药盒、瓶体等主体请放画面中间，四周各留 120px 余量。"},
       {k: "indications", l: "功能主治", t: "textarea"},
       {k: "usage", l: "用法用量", t: "textarea"},
       {k: "content", l: "产品介绍（图文编辑，可插入图片）", t: "richtext"},
@@ -146,7 +149,8 @@ const RESOURCES = {
     fields: [
       {k: "title", l: "文章标题", t: "text", required: true},
       {k: "category_id", l: "新闻分类", t: "fk", fk: "news-category", fkLabel: "name"},
-      {k: "image", l: "文章配图（960×520）", t: "image"},
+      {k: "image", l: "文章配图（推荐 1200×900，4:3）", t: "image",
+       hint: "同一张图用在两处：首页「邦琪资讯」焦点大图（730×560）与资讯列表缩略图（132×99）。4:3 下缩略图零裁切，焦点大图宽屏仅裁左右各约 13px、1366 宽笔记本左右各约 97px。主体请放画面中间，左右各留 100px 余量。"},
       {k: "content", l: "文章内容（图文编辑，可插入图片）", t: "richtext"},
       {k: "date", l: "发布日期", t: "date"},
       {k: "clicks", l: "点击量", t: "number", def: 0},
@@ -897,6 +901,7 @@ function buildForm(res, data) {
     } else if (f.t === "image") {
       html += buildImageField(f.k, f.l, val);
     }
+    if (f.hint) html += `<div class="form-hint">${f.hint}</div>`;
     html += `</div>`;
   }
   return html;

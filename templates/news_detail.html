@@ -39,10 +39,6 @@
         <div class="article-body">
           <!-- 文章正文（富文本，支持图文混排；与产品介绍共用 .rich-content 样式） -->
           <div class="rich-content">{{ n.content | safe }}</div>
-          <!-- 正文配图：未上传时显示纯色PNG占位图 -->
-          <div class="ph ph-green article-img">
-            <img src="{{ img_url(n.image, 'news-article', 'ph-green') }}" alt="{{ n.title }}">
-          </div>
           <p>{{ COMPANY.news_footer }}</p>
         </div>
 
@@ -77,7 +73,6 @@
 .pd-date { font-size: .8rem; color: var(--bq-gray); margin: 0; }
 .content-card hr { border: none; border-top: 1px solid var(--bq-line); opacity: 1; margin: 1.4rem 0; }
 .lead-para { font-size: 1.02rem !important; color: var(--bq-ink) !important; }
-.article-img { height: 220px; border-radius: 12px; margin: 1.2rem 0; }
 .disabled-link { pointer-events: none; opacity: .55; background: var(--bq-bg); }
 </style>
 {% endblock %}

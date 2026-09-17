@@ -158,7 +158,12 @@ body { margin: 0; font-family: "Noto Sans SC", sans-serif; background: var(--ad-
 .form-row .form-control:focus, .form-row .form-select:focus { border-color: var(--ad-primary); box-shadow: 0 0 0 2px rgba(20,81,63,.1); }
 .form-row textarea.form-control { min-height: 80px; resize: vertical; }
 .form-check-input:checked { background-color: var(--ad-primary); border-color: var(--ad-primary); }
-.form-hint { font-size: .72rem; color: var(--ad-text-light); margin-top: .2rem; }
+/* 字段说明（图片推荐尺寸等）：作为操作指引必须醒目，用浅灰底 + 品牌红左边条 */
+.form-hint {
+  font-size: .8rem; line-height: 1.75; color: #4a5260; margin-top: .45rem;
+  padding: .55rem .8rem; background: #f7f8fa;
+  border-left: 3px solid var(--ad-primary); border-radius: 0 6px 6px 0;
+}
 
 /* ===== 删除确认 ===== */
 .delete-icon { width: 56px; height: 56px; border-radius: 50%; background: #fef0f0; color: var(--ad-danger); font-size: 2rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
