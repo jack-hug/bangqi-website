@@ -24,7 +24,7 @@
 <div id="loginPage" class="login-page" style="display:none;">
     <div class="login-card">
         <div class="login-logo">
-            <span class="logo-block">邦</span>
+            <img src="{{ url_for('static', filename='bangqi-logo.png') }}" alt="邦琪药业" class="logo-img">
             <div>
                 <span class="login-title">邦琪集团</span>
                 <span class="login-sub">后台管理系统</span>
@@ -45,7 +45,9 @@
     <!-- 侧边栏 -->
     <aside class="admin-sidebar">
         <div class="sidebar-header">
-            <span class="logo-block">邦</span>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/" target="_blank">
+                <img src="{{ url_for('static', filename='bangqi-logo.png') }}" alt="邦琪药业" class="logo-img">
+            </a>
             <span class="sidebar-title">邦琪后台</span>
         </div>
         <nav class="sidebar-nav" id="sidebarNav"></nav>
