@@ -117,7 +117,7 @@ const RESOURCES = {
       {k: "indications", l: "功能主治", t: "textarea"},
       {k: "usage", l: "用法用量", t: "textarea"},
       {k: "content", l: "产品介绍（图文编辑，可插入图片）", t: "richtext"},
-      {k: "date", l: "发布日期", t: "date"},
+      {k: "date", l: "发布日期", t: "date", def: "@today"},
       {k: "clicks", l: "点击量", t: "number", def: 0},
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
     ],
@@ -152,7 +152,7 @@ const RESOURCES = {
       {k: "image", l: "文章配图（推荐 1200×900，4:3）", t: "image",
        hint: "同一张图用在两处：首页「邦琪资讯」焦点大图（730×560）与资讯列表缩略图（132×99）。4:3 下缩略图零裁切，焦点大图宽屏仅裁左右各约 13px、1366 宽笔记本左右各约 97px。主体请放画面中间，左右各留 100px 余量。"},
       {k: "content", l: "文章内容（图文编辑，可插入图片）", t: "richtext"},
-      {k: "date", l: "发布日期", t: "date"},
+      {k: "date", l: "发布日期", t: "date", def: "@today"},
       {k: "clicks", l: "点击量", t: "number", def: 0},
     ],
     cols: ["image", "title", "category", "date", "clicks"],
@@ -870,10 +870,21 @@ async function openEdit(resourceKey, id) {
   document.getElementById("modalSave").onclick = () => saveItem(resourceKey);
 }
 
+// 本地当天日期（YYYY-MM-DD）。
+// 注意：不要用 toISOString()——它按 UTC 取日期，东八区凌晨 0~8 点会算成昨天。
+function todayISO() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 function buildForm(res, data) {
   let html = "";
   for (const f of res.fields) {
-    const val = data[f.k] !== undefined ? data[f.k] : (f.def !== undefined ? f.def : "");
+    // 空值（undefined / null / ""）一律回落到字段默认值，避免渲染出 value="null"
+    let val = data[f.k];
+    if (val === undefined || val === null || val === "") val = f.def !== undefined ? f.def : "";
+    if (val === "@today") val = todayISO();   // 日期字段的「默认今天」
     const req = f.required ? " required" : "";
     html += `<div class="form-row">`;
     html += `<label>${f.l}${f.required ? ' <span class="text-danger">*</span>' : ''}</label>`;
@@ -1641,7 +1652,7 @@ function renderBatchUpload() {
     <div class="batch-upload-wrap">
       <div class="batch-card">
         <h4 class="batch-title">📋 第 1 步：下载 Excel 模板</h4>
-        <p class="batch-desc">带 * 列为必填，剂型 / 商标 / 功能分类 不存在将自动新建。图片请按 <code>ZIP 目录 &lt;产品编号&gt;/&lt;图片文件名&gt;</code> 整理；名为 <code>cover.jpg</code> 的图片会作为产品封面。</p>
+        <p class="batch-desc">带 * 列为必填，剂型 / 商标 / 功能分类 不存在将自动新建。图片请按 <code>ZIP 目录 &lt;产品编号&gt;/&lt;图片文件名&gt;</code> 整理；名为 <code>cover.jpg</code> 的图片会作为产品封面；<strong>上市日期留空则默认取当天</strong>。</p>
         <a href="/api/product/batch_template" class="btn btn-primary" download>⬇ 下载 Excel 模板</a>
       </div>
 

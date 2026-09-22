@@ -69,15 +69,18 @@ def batch_template():
         cell = ws.cell(row=1, column=ci, value=header)
         cell.font = cell.font.copy(bold=True)
         ws.column_dimensions[cell.column_letter].width = COL_WIDTHS[ci - 1]
-    # 示例行
-    for ci, (_, _, sample) in enumerate(TEMPLATE_COLUMNS, start=1):
+    # 示例行（上市日期用当天，与后台新增产品的默认值一致）
+    for ci, (key, _, sample) in enumerate(TEMPLATE_COLUMNS, start=1):
+        if key == "date":
+            sample = time.strftime("%Y-%m-%d")
         ws.cell(row=2, column=ci, value=sample)
     # 顶部说明
     ws.insert_rows(1)
     note_cell = ws.cell(row=1, column=1,
         value="说明：带 * 的列为必填；生产企业/剂型/商标/功能分类 不存在将自动新建；"
               "图片请按 ZIP 目录 <产品编号>/<图片文件名> 整理；"
-              "封面图文件名留空则取该 SKU 第一张图片作为封面。")
+              "封面图文件名留空则取该 SKU 第一张图片作为封面；"
+              "上市日期留空则默认取当天。")
     note_cell.font = note_cell.font.copy(italic=True, color="666666")
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(TEMPLATE_COLUMNS))
 
@@ -261,6 +264,9 @@ def batch_upload():
                         v = cell(fk)
                         if v:
                             setattr(p, fk, v)
+                    # 上市日期留空时默认当天（与后台新增产品的默认值保持一致）
+                    if not p.date:
+                        p.date = time.strftime("%Y-%m-%d")
                     db.session.flush()
 
                     # 5) 处理图片
