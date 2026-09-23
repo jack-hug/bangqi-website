@@ -27,7 +27,9 @@
             <div class="filter-tags">
               <a href="/products{{ qs_except('form') }}" class="filter-tag {{ 'active' if not cur_form }}">全部</a>
               {% for f in DOSAGE_FORMS %}
-              <a href="/products{{ qs_append('form', f) }}" class="filter-tag {{ 'active' if cur_form == f }}">{{ f }}</a>
+              <a href="/products{{ qs_except('form') if cur_form == f else qs_append('form', f) }}"
+                 class="filter-tag {{ 'active' if cur_form == f }}"
+                 title="{{ '取消筛选：' ~ f if cur_form == f else '按条件筛选：' ~ f }}">{{ f }}</a>
               {% endfor %}
             </div>
           </div>
@@ -36,7 +38,9 @@
             <div class="filter-tags">
               <a href="/products{{ qs_except('manufacturer') }}" class="filter-tag {{ 'active' if not cur_manufacturer }}">全部</a>
               {% for m in manufacturers %}
-              <a href="/products{{ qs_append('manufacturer', m) }}" class="filter-tag {{ 'active' if cur_manufacturer == m }}">{{ m }}</a>
+              <a href="/products{{ qs_except('manufacturer') if cur_manufacturer == m else qs_append('manufacturer', m) }}"
+                 class="filter-tag {{ 'active' if cur_manufacturer == m }}"
+                 title="{{ '取消筛选：' ~ m if cur_manufacturer == m else '按条件筛选：' ~ m }}">{{ m }}</a>
               {% endfor %}
             </div>
           </div>
@@ -45,7 +49,9 @@
             <div class="filter-tags">
               <a href="/products{{ qs_except('trademark') }}" class="filter-tag {{ 'active' if not cur_trademark }}">全部</a>
               {% for t in trademarks %}
-              <a href="/products{{ qs_append('trademark', t) }}" class="filter-tag {{ 'active' if cur_trademark == t }}">{{ t }}</a>
+              <a href="/products{{ qs_except('trademark') if cur_trademark == t else qs_append('trademark', t) }}"
+                 class="filter-tag {{ 'active' if cur_trademark == t }}"
+                 title="{{ '取消筛选：' ~ t if cur_trademark == t else '按条件筛选：' ~ t }}">{{ t }}</a>
               {% endfor %}
             </div>
           </div>
@@ -54,7 +60,9 @@
             <div class="filter-tags">
               <a href="/products{{ qs_except('func') }}" class="filter-tag {{ 'active' if not cur_func }}">全部</a>
               {% for fn in functions %}
-              <a href="/products{{ qs_append('func', fn) }}" class="filter-tag {{ 'active' if cur_func == fn }}">{{ fn }}</a>
+              <a href="/products{{ qs_except('func') if cur_func == fn else qs_append('func', fn) }}"
+                 class="filter-tag {{ 'active' if cur_func == fn }}"
+                 title="{{ '取消筛选：' ~ fn if cur_func == fn else '按条件筛选：' ~ fn }}">{{ fn }}</a>
               {% endfor %}
             </div>
           </div>
@@ -63,13 +71,27 @@
     </div>
 
     <div class="col-lg-9">
-      <div class="d-flex justify-content-between align-items-baseline mb-4">
-        <span class="result-count">共 <strong>{{ total }}</strong> 个产品
-          {% if cur_manufacturer %}· 生产企业「{{ cur_manufacturer }}」{% endif %}
-          {% if cur_form %}· 剂型「{{ cur_form }}」{% endif %}
-          {% if cur_trademark %}· 商标「{{ cur_trademark }}」{% endif %}
-          {% if cur_func %}· 功能「{{ cur_func }}」{% endif %}
-        </span>
+      {# 已生效的筛选条件：每项一个带红叉的标签，点击即取消；右侧另有「全部清除筛选」 #}
+      {% set active_filters = [] %}
+      {% if cur_form %}{% set _ = active_filters.append(('form', '剂型', cur_form)) %}{% endif %}
+      {% if cur_manufacturer %}{% set _ = active_filters.append(('manufacturer', '生产企业', cur_manufacturer)) %}{% endif %}
+      {% if cur_trademark %}{% set _ = active_filters.append(('trademark', '商标', cur_trademark)) %}{% endif %}
+      {% if cur_func %}{% set _ = active_filters.append(('func', '功能', cur_func)) %}{% endif %}
+
+      <div class="result-bar mb-4">
+        <div class="result-bar-main">
+          <span class="result-count">共 <strong>{{ total }}</strong> 个产品</span>
+          {% for key, label, val in active_filters %}
+          <a class="filter-chip" href="/products{{ qs_except(key) }}"
+             title="取消筛选：{{ label }}「{{ val }}」" aria-label="取消筛选：{{ label }}「{{ val }}」">
+            <span>{{ label }}「{{ val }}」</span>
+            <span class="filter-chip-x" aria-hidden="true">&#10005;</span>
+          </a>
+          {% endfor %}
+          {% if active_filters %}
+          <a class="filter-clear" href="/products" title="清除全部筛选条件">全部清除筛选</a>
+          {% endif %}
+        </div>
         <span class="result-count">第 {{ page }} / {{ pages }} 页</span>
       </div>
 
@@ -139,6 +161,34 @@
 .filter-tag.active { background: var(--bq-red); border-color: var(--bq-red); color: #fff; }
 .result-count { font-size: .86rem; color: var(--bq-gray); }
 .result-count strong { color: var(--bq-red); }
+
+/* 结果栏：左侧「共 N 个产品」+ 已选筛选标签（带红叉，点击取消）+ 全部清除 */
+.result-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .55rem 1rem;
+}
+.result-bar-main { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .82rem; line-height: 1.5; color: var(--bq-red-deep);
+  background: var(--bq-red-soft); border: 1px solid rgba(230, 33, 41, .26);
+  border-radius: 999px; padding: .22rem .4rem .22rem .78rem;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.filter-chip:hover { background: var(--bq-red); border-color: var(--bq-red); color: #fff; }
+.filter-chip-x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.05rem; height: 1.05rem; border-radius: 50%;
+  font-size: .66rem; font-weight: 700; line-height: 1;
+  color: #fff; background: var(--bq-red); transition: background .2s, color .2s;
+}
+.filter-chip:hover .filter-chip-x { background: #fff; color: var(--bq-red); }
+.filter-clear {
+  font-size: .8rem; color: var(--bq-gray);
+  border-bottom: 1px dashed var(--bq-line); padding-bottom: 1px;
+  transition: color .2s, border-color .2s;
+}
+.filter-clear:hover { color: var(--bq-red); border-color: var(--bq-red); }
 
 .product-card { position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow); }
 .product-ph { height: 230px; transition: filter .35s, transform .35s; }
