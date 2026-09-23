@@ -3,6 +3,7 @@
 - GET  /api/product/batch_template  下载 Excel 模板 (.xlsx)
 - POST /api/product/batch_upload    Excel + 图片 ZIP 一次性入库
 """
+import datetime
 import io
 import os
 import re
@@ -53,7 +54,7 @@ def _safe_filename(name):
 
 
 def _norm_key(s):
-    """SKU 目录名归一化：去空白、转大写"""
+    """SKU 目录名归一化：去首尾空白（大小写由调用方用 .lower() 统一处理）"""
     return (s or "").strip()
 
 
@@ -120,48 +121,67 @@ def batch_upload():
         except Exception as e:
             return jsonify({"error": "Excel 解析失败：%s" % e}), 400
         ws = wb.active
-        rows_iter = ws.iter_rows(values_only=True)
-        # 找表头行：第一行非空且包含 "产品编号" 或 "code"
-        header_idx = None
-        rows = list(rows_iter)
-        for ri, row in enumerate(rows[:5]):
-            if row and any(c and ("产品编号" in str(c) or str(c).lower() == "code") for c in row):
-                header_idx = ri
-                break
-        if header_idx is None:
-            return jsonify({"error": "未识别到表头，请确认第一行包含「产品编号(SKU)*」"}), 400
-        header = [str(c or "").strip() for c in rows[header_idx]]
-        body = [r for r in rows[header_idx + 1:] if r and any(c not in (None, "") for c in r)]
+        rows = list(ws.iter_rows(values_only=True))
 
-        # 按列名映射
+        def _norm_header(s):
+            """表头归一化：全角空格→半角、去空白、去尾部 * 标记"""
+            return str(s or "").replace("\u3000", " ").strip().rstrip("*").strip()
+
+        # 找表头行：取「匹配到模板列名最多」的一行，并跳过顶部合并的说明行。
+        # 注意：说明行文案里含「产品编号 / 生产企业 / 剂型 / 商标 / 功能分类 / 封面…」
+        # 等词，旧逻辑（第一行含「产品编号」即当表头）会把说明行误认成表头，
+        # 于是 产品名称 列永远匹配不到 → 每一行都报「缺少产品名称」。
+        header_idx, best_score = None, 0
+        for ri, row in enumerate(rows[:10]):
+            cells = [_norm_header(c) for c in row if c is not None and str(c).strip()]
+            if not cells:
+                continue
+            if cells[0].startswith("说明"):
+                continue
+            score = 0
+            for _key, _header_cn, _sample in TEMPLATE_COLUMNS:
+                target = _norm_header(_header_cn)
+                if any(target == c or target in c for c in cells):
+                    score += 1
+            if score > best_score:
+                header_idx, best_score = ri, score
+        # 至少要认出 产品编号 + 产品名称 两列，才认为这行是表头
+        if header_idx is None or best_score < 2:
+            return jsonify({"error": "未识别到表头，请确认存在包含「产品编号(SKU)*」「产品名称*」的表头行"}), 400
+
+        header = [_norm_header(c) for c in rows[header_idx]]
+
+        # 按列名映射：先与模板表头精确比对，再退化为关键字包含匹配
+        HEADER_ALIASES = {
+            "code":         ["产品编号", "code", "sku"],
+            "name":         ["产品名称", "名称", "name"],
+            "manufacturer": ["生产企业", "厂商"],
+            "dosage_form":  ["剂型"],
+            "trademark":    ["商标"],
+            "func_category": ["功能分类", "分类"],
+            "spec":         ["规格"],
+            "indications":  ["功能主治", "主治"],
+            "usage":        ["用法用量", "用法"],
+            "content":      ["产品介绍", "介绍"],
+            "date":         ["上市日期", "日期", "date"],
+            "cover":        ["封面图文件名", "封面"],
+        }
         col_map = {}
-        for ci, (key, _header, _sample) in enumerate(TEMPLATE_COLUMNS):
-            # 优先匹配表头中包含 key 中文描述或 key 本身
-            for hj, h in enumerate(header):
-                if key == "code" and ("产品编号" in h or h.lower() == "code"):
-                    col_map["code"] = hj; break
-                if key == "name" and ("产品名称" in h or h.lower() == "name"):
-                    col_map["name"] = hj; break
-                if key == "manufacturer" and "生产企业" in h:
-                    col_map["manufacturer"] = hj; break
-                if key == "dosage_form" and "剂型" in h:
-                    col_map["dosage_form"] = hj; break
-                if key == "trademark" and "商标" in h:
-                    col_map["trademark"] = hj; break
-                if key == "func_category" and "功能分类" in h:
-                    col_map["func_category"] = hj; break
-                if key == "spec" and "规格" in h:
-                    col_map["spec"] = hj; break
-                if key == "indications" and "功能主治" in h:
-                    col_map["indications"] = hj; break
-                if key == "usage" and "用法" in h:
-                    col_map["usage"] = hj; break
-                if key == "content" and "产品介绍" in h:
-                    col_map["content"] = hj; break
-                if key == "date" and ("日期" in h or h.lower() == "date"):
-                    col_map["date"] = hj; break
-                if key == "cover" and "封面" in h:
-                    col_map["cover"] = hj; break
+        for key, header_cn, _sample in TEMPLATE_COLUMNS:
+            target = _norm_header(header_cn)
+            if target in header:
+                col_map[key] = header.index(target)
+                continue
+            for alias in HEADER_ALIASES.get(key, []):
+                hit = next((hj for hj, h in enumerate(header)
+                            if h and (alias in h or h.lower() == alias.lower())), None)
+                if hit is not None:
+                    col_map[key] = hit
+                    break
+
+        # 数据行：带真实 Excel 行号（1 起），空行已剔除，行号仍可对上原表
+        body = [(ri + 1, r) for ri, r in enumerate(rows)
+                if ri > header_idx and r and any(c not in (None, "") for c in r)]
 
         # 2) 解压 ZIP，建立 SKU -> 图片文件名列表 映射
         sku_images = defaultdict(list)   # {code_lower: [filename1, filename2, ...]}
@@ -219,13 +239,23 @@ def batch_upload():
         # 4) 逐行处理
         with zipfile.ZipFile(zip_path, "r") as zf:
             zip_names = set(zf.namelist())
-            for ri, row in enumerate(body, start=header_idx + 2):
+            for ri, row in body:
                 def cell(k):
                     idx = col_map.get(k)
                     if idx is None or idx >= len(row):
                         return ""
                     v = row[idx]
-                    return "" if v is None else (str(v).strip() if not isinstance(v, (int, float)) else str(v).strip())
+                    if v is None:
+                        return ""
+                    # 日期统一成 YYYY-MM-DD（Excel 里可能是 datetime，也可能是日期序列号）
+                    if isinstance(v, (datetime.datetime, datetime.date)):
+                        return v.strftime("%Y-%m-%d")
+                    if k == "date" and isinstance(v, (int, float)) and 20000 <= float(v) <= 60000:
+                        return (datetime.datetime(1899, 12, 30)
+                                + datetime.timedelta(days=float(v))).strftime("%Y-%m-%d")
+                    if isinstance(v, (int, float)) and float(v).is_integer():
+                        return str(int(v))
+                    return str(v).strip()
 
                 code = cell("code")
                 name = cell("name")
