@@ -517,12 +517,12 @@ body.home-v1 #site-nav {
               {% for n in latest_news %}
               <a href="/news/{{ n.id }}" class="nf-slide {{ 'on' if loop.first }}">
                 <div class="ph {{ nf_colors[loop.index0 % 5] }} nf-media">
-                  <img src="{{ img_url(n.image, 'news-feature', nf_colors[loop.index0 % 5]) }}" alt="{{ n.title }}">
+                  <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-feature', nf_colors[loop.index0 % 5]) }}" alt="{{ n.title }}">
                 </div>
                 <div class="nf-overlay">
                   <span class="nf-cat">{{ n.category }}</span>
                   <h3 class="nf-title">{{ n.title }}</h3>
-                  <p class="nf-excerpt">{{ n.content | striptags | truncate(60) }}</p>
+                  <p class="nf-excerpt">{{ n.content | plaintext | truncate(60) }}</p>
                   <span class="nf-meta"><span>{{ n.date }} 发布</span><em>阅读全文 →</em></span>
                 </div>
               </a>

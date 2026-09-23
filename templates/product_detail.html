@@ -90,7 +90,7 @@
           <!-- 产品介绍：后台富文本编辑，支持图文混排（可插入图片） -->
           <div class="pd-edit-zone">
             <h3>产品介绍</h3>
-            <div class="rich-content">{{ (p.content or (p.name ~ '是公司' ~ p.form ~ '代表性品种之一，收载于国家药品标准，历经多年临床验证与工艺打磨。')) | safe }}</div>
+            <div class="rich-content">{{ (p.content or (p.name ~ '是公司' ~ p.form ~ '代表性品种之一，收载于国家药品标准，历经多年临床验证与工艺打磨。')) | richtext }}</div>
           </div>
 
         <hr>

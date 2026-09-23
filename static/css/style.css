@@ -278,7 +278,7 @@ a:hover { color: var(--bq-gold); }
 .content-card h2::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 64px; height: 2px; background: var(--bq-gold); }
 .content-card h3 { font-size: 1.05rem; font-weight: 700; color: var(--bq-ink); margin: 1.6rem 0 .55rem; display: flex; align-items: center; gap: .5rem; }
 .content-card h3::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--bq-gold); transform: rotate(45deg); }
-.content-card p { color: #4a5852; line-height: 1.95; font-size: .94rem; margin-bottom: .6rem; white-space: pre-line; }
+.content-card p { color: #4a5852; line-height: 1.95; font-size: .94rem; margin-bottom: .6rem; }
 
 /* 新闻/文章列表行 */
 .article-row { display: block; padding: 1.25rem 0; border-bottom: 1px solid var(--bq-line); }

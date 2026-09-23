@@ -2,6 +2,10 @@
  * 邦琪药业 - 后台管理 SPA
  * ============================================================ */
 
+// 文章配图的默认图（企业 logo，1200×900 = 4:3），与 placeholder.py 中的
+// NEWS_DEFAULT_IMAGE 保持一致
+const NEWS_DEFAULT_IMAGE = "/static/bangqi-logo-1200x900.jpg";
+
 // ---- 色块选项 ----
 const COLORS = [
   {v: "ph-green", t: "玉绿"}, {v: "ph-ta", t: "青苔"}, {v: "ph-am", t: "琥珀"},
@@ -152,7 +156,8 @@ const RESOURCES = {
       {k: "title", l: "文章标题", t: "text", required: true},
       {k: "category_id", l: "新闻分类", t: "fk", fk: "news-category", fkLabel: "name"},
       {k: "image", l: "文章配图（推荐 1200×900，4:3）", t: "image",
-       hint: "同一张图用在两处：首页「邦琪资讯」焦点大图（730×560）与资讯列表缩略图（132×99）。4:3 下缩略图零裁切，焦点大图宽屏仅裁左右各约 13px、1366 宽笔记本左右各约 97px。主体请放画面中间，左右各留 100px 余量。"},
+       def: NEWS_DEFAULT_IMAGE,
+       hint: "默认使用企业 logo（1200×900，4:3），点「选择图片上传」即可换成该文章自己的配图；点「移除图片」会恢复成企业 logo。同一张图用在两处：首页「邦琪资讯」焦点大图（730×560）与资讯列表缩略图（132×99）。4:3 下缩略图零裁切，焦点大图宽屏仅裁左右各约 13px、1366 宽笔记本左右各约 97px。主体请放画面中间，左右各留 100px 余量。"},
       {k: "content", l: "文章内容（图文编辑，可插入图片）", t: "richtext"},
       {k: "date", l: "发布日期", t: "date", def: "@today"},
       {k: "clicks", l: "点击量", t: "number", def: 0},
@@ -937,6 +942,54 @@ function buildForm(res, data) {
 // ============================================================
 // 富文本编辑器（Quill）—— 用于产品介绍等图文混排字段
 // ============================================================
+// 纯文本 → <p> 段落（与后端 richtext.py 的 text_to_html 同一套规则）
+// 历史内容是用 \n 分段的纯文本，直接交给 Quill 会被折叠成一行，这里先转成段落
+function textToRichHtml(text) {
+  const parts = String(text).replace(/\r\n?/g, "\n").split("\n");
+  const out = [];
+  let pendingBlank = false;
+  for (const raw of parts) {
+    const line = raw.trim();
+    if (!line) { if (out.length) pendingBlank = true; continue; }
+    if (pendingBlank && out.length) out.push("<p><br></p>");
+    pendingBlank = false;
+    out.push("<p>" + escapeHtml(line) + "</p>");
+  }
+  return out.join("");
+}
+
+// 去掉空段落：<p></p> 一律删掉，连续空段压成一个，首尾空段删除
+function cleanRichHtml(html) {
+  let s = String(html || "").trim();
+  if (!s) return "";
+  s = s.replace(/>[ \t]*\n[ \t]*</g, "><");
+  s = s.replace(/<p>(?:[ \t\u00a0]|&nbsp;|<br\s*\/?>)*<\/p>/gi, "<p><br></p>");
+  s = s.replace(/(?:<p><br\s*\/?><\/p>)+/gi, "<p><br></p>");
+  s = s.replace(/^(?:<p><br\s*\/?><\/p>)+/i, "").replace(/(?:<p><br\s*\/?><\/p>)+$/i, "");
+  return s.trim();
+}
+
+// 「是 HTML」的判定：内容以结构标签开头（与后端 richtext.py 的 _BLOCK_START_RE
+// 同一套规则）。判定不能放宽到「包含任意标签」——纯文本里的裸尖括号会被误判成标签。
+const RICH_START_RE = /^\s*<\/?(?:p|div|h[1-6]|ul|ol|li|blockquote|pre|img|hr|table|br|span|strong|em|u|s|sub|sup|a)\b/i;
+
+// 统一入口：纯文本或 HTML → 规范 HTML（存库前后台编辑器都按它加载）
+function richToHtml(raw) {
+  const s = String(raw == null ? "" : raw).replace(/\r\n?/g, "\n").trim();
+  if (!s) return "";
+  return RICH_START_RE.test(s) ? cleanRichHtml(s) : textToRichHtml(s);
+}
+
+// 取纯文本（摘要、后台列表预览用）：块级标签之间补空格，避免段落粘连
+function richToPlain(raw) {
+  const s = richToHtml(raw);
+  if (!s) return "";
+  const div = document.createElement("div");
+  div.innerHTML = s.replace(/<br\s*\/?>/gi, " ");
+  div.querySelectorAll("p,div,h1,h2,h3,h4,h5,h6,li,tr,blockquote").forEach(el => el.after(" "));
+  return (div.textContent || "").replace(/\s+/g, " ").trim();
+}
+
 const RICH_TOOLBAR = [
   [{ header: [1, 2, 3, false] }],
   ["bold", "italic", "underline", "strike"],
@@ -962,7 +1015,7 @@ function initRichTextEditors() {
       },
       placeholder: "可输入文字，也可通过工具栏图片按钮插入图片，支持图文混排…",
     });
-    const html = state.pendingRichText[key];
+    const html = richToHtml(state.pendingRichText[key]);
     if (html) {
       const delta = quill.clipboard.convert(html);
       quill.setContents(delta, "silent");
@@ -1352,6 +1405,12 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// 后台列表里的正文预览：剥掉 HTML 标签再截断，避免露出 <p></p>
+function renderPlainPreview(content, max) {
+  const text = richToPlain(content);
+  return escapeHtml(text.substring(0, max)) + (text.length > max ? "..." : "");
+}
+
 function collectFormData(res) {
   const data = {};
   for (const f of res.fields) {
@@ -1481,7 +1540,7 @@ function renderSectionList(sections, pageId) {
   if (!sections.length) return `<p class="text-muted mb-0">暂无段落</p>`;
   return `<table class="data-table"><tbody>${sections.map(s => `
     <tr><td style="width:160px;font-weight:600">${escapeHtml(s.subtitle)}</td>
-    <td>${escapeHtml(s.content).substring(0, 80)}${s.content && s.content.length > 80 ? '...' : ''}</td>
+    <td>${renderPlainPreview(s.content, 80)}</td>
     <td class="td-actions" style="width:120px">
       <button class="btn-edit" onclick="editSection(${s.id})">编辑</button>
       <button class="btn-del" onclick="deleteSection(${s.id})">删除</button>

@@ -22,6 +22,7 @@ from extensions import db
 from models import (Product, ProductImage,
                     DosageForm, Trademark, FuncCategory, Manufacturer)
 from routes.api import login_required
+from richtext import to_html as rich_to_html
 
 bp = Blueprint("batch", __name__, url_prefix="/api/product")
 
@@ -293,7 +294,9 @@ def batch_upload():
                     for fk in ("spec", "indications", "usage", "content", "date"):
                         v = cell(fk)
                         if v:
-                            setattr(p, fk, v)
+                            # 产品介绍是富文本字段：Excel 单元格是纯文本，统一按
+                            # 段落规范化，避免与后台编辑器保存的格式不一致
+                            setattr(p, fk, rich_to_html(v) if fk == "content" else v)
                     # 上市日期留空时默认当天（与后台新增产品的默认值保持一致）
                     if not p.date:
                         p.date = time.strftime("%Y-%m-%d")

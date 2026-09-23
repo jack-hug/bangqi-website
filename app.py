@@ -205,9 +205,24 @@ def create_app():
         return resp
 
     # 模板全局函数：未上传图片时返回对应分辨率的纯色 PNG 占位图
-    from placeholder import img_url, placeholder_url
+    from placeholder import img_url, placeholder_url, NEWS_DEFAULT_IMAGE
     app.add_template_global(img_url)
     app.add_template_global(placeholder_url)
+    # 文章配图默认图（企业 logo，1200×900 = 4:3，与后台提示尺寸一致）
+    app.add_template_global(NEWS_DEFAULT_IMAGE, "NEWS_DEFAULT_IMAGE")
+
+    # 富文本规范化：纯文本按段落包 <p>，HTML 清理空段落
+    # （产品介绍 / 文章正文 / 栏目段落三处共用，见 richtext.py）
+    from markupsafe import Markup
+    from richtext import to_html as _rich_html, to_plain as _rich_plain
+
+    def _richtext_filter(raw):
+        # 返回 Markup：内容已由 richtext.to_html 做过转义 / 白名单处理，
+        # 不需要 Jinja 再转义一次（否则页面上会显示成 &lt;p&gt;）
+        return Markup(_rich_html(raw))
+
+    app.add_template_filter(_richtext_filter, "richtext")
+    app.add_template_filter(_rich_plain, "plaintext")
 
     # 后台管理页面
     @app.route("/admin")

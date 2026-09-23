@@ -43,15 +43,15 @@
         {% for n in news_list %}
         <a href="/news/{{ n.id }}" class="article-row">
           <div class="d-flex gap-3 align-items-center">
-            <!-- 文章配图：未上传时显示纯色PNG占位图 -->
+            <!-- 文章配图：未上传时默认显示企业 logo（NEWS_DEFAULT_IMAGE） -->
             <div class="ph {{ ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4] }}">
-              <img src="{{ img_url(n.image, 'news-thumb', ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4]) }}" alt="{{ n.title }}">
+              <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-thumb', ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4]) }}" alt="{{ n.title }}">
             </div>
             <div class="flex-grow-1 min-w-0">
               <span class="ar-cat">{{ n.category }}</span>
               <div class="ar-title">{{ n.title }}</div>
               <div class="ar-meta mt-1">{{ n.date }}　·　阅读 {{ n.clicks }}</div>
-              <p class="ar-excerpt">{{ n.content | striptags | truncate(64) }}</p>
+              <p class="ar-excerpt">{{ n.content | plaintext | truncate(64) }}</p>
             </div>
           </div>
         </a>

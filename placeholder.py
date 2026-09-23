@@ -11,6 +11,11 @@ import zlib
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PH_DIR = os.path.join(BASE_DIR, "static", "uploads", "placeholders")
 
+# 文章配图默认图：企业 logo（1200×900，正好是文章配图推荐的 4:3）。
+# 后台新增文章时「文章配图」会自动预填它，随时可点「选择图片上传」替换；
+# 前台渲染时 image 为空也回落到它，保证列表/焦点图不出现空白色块。
+NEWS_DEFAULT_IMAGE = "/static/bangqi-logo-1200x900.jpg"
+
 # ============================================================
 # 品牌色系（与前台 .ph-* 色块样式一一对应，朱红主导 + 蓝绿辅助）
 # ============================================================

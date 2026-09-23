@@ -12,8 +12,30 @@ from models import (Company, Banner, HomeStat, CompanyImage, EnterpriseCard,
                     NewsCategory, News, Page, PageSection, PageStat, AdminUser,
                     LoginLog, ActivityLog)
 from config import Config
+from richtext import to_html as rich_to_html
 
 bp = Blueprint("api", __name__, url_prefix="/api")
+
+# 富文本字段（content）：保存时统一规范化成 <p> 段落格式。
+# 历史数据是纯文本（用 \n 分行），Quill 编辑器会重新包 <p>；
+# 不统一的话，同一份内容「前台直出」与「编辑保存后」呈现会不一致，
+# 后台列表还会直接露出 <p></p> 标签。见 richtext.py。
+RICH_FIELDS = {
+    Product: ("content",),
+    News: ("content",),
+    PageSection: ("content",),
+}
+
+
+def normalize_rich(model, data):
+    keys = RICH_FIELDS.get(model)
+    if not keys:
+        return data
+    for key in keys:
+        val = data.get(key)
+        if isinstance(val, str) and val.strip():
+            data[key] = rich_to_html(val)
+    return data
 
 # ============================================================
 # 模块映射（用于操作审计 / 模块最后更新时间）
@@ -168,6 +190,7 @@ def _get_one(model, item_id):
 
 
 def _create(model, data):
+    data = normalize_rich(model, data)
     item = model()
     for key, val in data.items():
         if hasattr(item, key) and val is not None:
@@ -179,6 +202,7 @@ def _create(model, data):
 
 
 def _update(model, item_id, data):
+    data = normalize_rich(model, data)
     item = model.query.get_or_404(item_id)
     for key, val in data.items():
         if hasattr(item, key) and val is not None:
@@ -523,7 +547,7 @@ def product_one(item_id):
 @bp.route("/product", methods=["POST"])
 @login_required
 def product_create():
-    data = _read_body()
+    data = normalize_rich(Product, _read_body())
     item = Product()
     for key in ["code", "name", "dosage_form_id", "trademark_id", "func_category_id",
                 "manufacturer_id", "spec", "indications", "usage", "content",
@@ -538,7 +562,7 @@ def product_create():
 @bp.route("/product/<int:item_id>", methods=["PUT"])
 @login_required
 def product_update(item_id):
-    data = _read_body()
+    data = normalize_rich(Product, _read_body())
     item = Product.query.get_or_404(item_id)
     for key in ["code", "name", "dosage_form_id", "trademark_id", "func_category_id",
                 "manufacturer_id", "spec", "indications", "usage", "content",

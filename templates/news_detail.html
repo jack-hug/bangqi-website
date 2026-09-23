@@ -38,7 +38,7 @@
         <hr>
         <div class="article-body">
           <!-- 文章正文（富文本，支持图文混排；与产品介绍共用 .rich-content 样式） -->
-          <div class="rich-content">{{ n.content | safe }}</div>
+          <div class="rich-content">{{ n.content | richtext }}</div>
           <p>{{ COMPANY.news_footer }}</p>
         </div>
 
