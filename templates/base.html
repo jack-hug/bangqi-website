@@ -17,7 +17,7 @@
 <div class="topbar" id="site-topbar">
     <div class="container d-flex justify-content-between align-items-center">
         <span class="topbar-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                       stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 聚蓄岐黃寶粹 · 聚弘揚本草精華</span>
+                                       stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 聚蓄岐黃寶粹 · 弘揚本草精華</span>
         <span class="topbar-text">咨询热线：{{ COMPANY.phone }}</span>
     </div>
 </div>
@@ -80,7 +80,7 @@
             <div class="col-6 col-lg-2">
                 <h6 class="footer-title">产品中心</h6>
                 <ul class="footer-links">
-                    {% for f in DOSAGE_FORMS %}
+                    {% for f in DOSAGE_FORMS[:8] %}
                         <li><a href="/products?form={{ f }}">{{ f }}</a></li>
                     {% endfor %}
                 </ul>
@@ -131,7 +131,8 @@
             </div>
         </div>
         <div class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-            <span>© 2026 {{ COMPANY.full_name }}　桂ICP备00000000号</span>
+            <span>© 2026 {{ COMPANY.full_name }}　<a href="https://beian.miit.gov.cn/"
+                                                    target="_blank">桂ICP备14001107号</a></span>
             <span>本站内容仅供参考，药品使用请遵医嘱或按说明书执行</span>
         </div>
     </div>
