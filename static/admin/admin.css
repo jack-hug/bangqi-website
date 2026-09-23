@@ -109,6 +109,14 @@ body { margin: 0; font-family: "Noto Sans SC", sans-serif; background: var(--ad-
 .td-color-chip { display: inline-block; width: 60px; height: 20px; border-radius: 4px; font-size: .68rem; color: #fff; text-align: center; line-height: 20px; }
 .td-thumb { display: block; width: 56px; height: 40px; object-fit: cover; border-radius: 5px; border: 1px solid var(--ad-border); }
 
+/* ===== 详情预览链接（产品名称 / 文章标题）+ 排序上移下移 ===== */
+.data-table .td-link { color: var(--ad-primary); text-decoration: none; font-weight: 500; border-bottom: 1px dashed transparent; }
+.data-table .td-link:hover { border-bottom-color: currentColor; }
+.data-table .td-link-ico { font-size: .68rem; margin-left: .2rem; opacity: .5; }
+.btn-move { background: #f2f4f7; color: #5b6472; min-width: 26px; font-weight: 600; }
+.btn-move:hover:not(:disabled) { background: var(--ad-primary-soft); color: var(--ad-primary); }
+.btn-move:disabled { opacity: .35; cursor: not-allowed; }
+
 /* ===== 列表总数统计 + 分页 ===== */
 .crud-count { font-size: .82rem; color: var(--ad-text-light); white-space: nowrap; }
 .crud-count strong { color: var(--ad-primary); font-weight: 700; }

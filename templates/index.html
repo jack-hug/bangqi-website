@@ -1172,17 +1172,23 @@ document.addEventListener("DOMContentLoaded", function () {
 /* 焦点大图 + 速览列表联动轮播（slide 4 内部） */
 (function () {
   function setup() {
-    var feature = document.querySelector(".news-feature");
+    var area = document.getElementById("newsArea");
+    if (!area) return;
+    var feature = area.querySelector(".news-feature");
     if (!feature) return;
     var slides = feature.querySelectorAll(".nf-slide");
-    var rows = feature.querySelectorAll(".ns-item");
+    // 右侧「要闻速览」在 .news-side 里，与 .news-feature 同级：必须在 area 范围内查，
+    // 否则取到空集合，右侧高亮会一直停在模板渲染的第一条。
+    var rows = area.querySelectorAll(".ns-item");
     var bar = feature.querySelector(".nf-progress-bar");
     if (slides.length < 2) return;
     var idx = 0, timer = null, DUR = 5200;
     function set(i) {
       idx = (i + slides.length) % slides.length;
       slides.forEach(function (s, j) { s.classList.toggle("on", j === idx); });
-      rows.forEach(function (r, j) { r.classList.toggle("on", j === idx); });
+      rows.forEach(function (r) {
+        r.classList.toggle("on", parseInt(r.dataset.idx, 10) === idx);
+      });
       if (bar) { bar.classList.remove("run"); void bar.offsetWidth; bar.classList.add("run"); }
     }
     function play() { stop(); timer = setInterval(function () { set(idx + 1); }, DUR); }
@@ -1190,8 +1196,9 @@ document.addEventListener("DOMContentLoaded", function () {
     rows.forEach(function (r) {
       r.addEventListener("mouseenter", function () { set(parseInt(r.dataset.idx, 10)); });
     });
-    feature.addEventListener("mouseenter", stop);
-    feature.addEventListener("mouseleave", play);
+    // 鼠标停在整个资讯区（含右侧列表）都暂停，避免正在看时被跳走
+    area.addEventListener("mouseenter", stop);
+    area.addEventListener("mouseleave", play);
     set(0); play();
   }
   // 等首次进入 news 屏才启动轮播（节省 CPU）

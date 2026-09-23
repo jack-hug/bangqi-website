@@ -16,7 +16,7 @@ if (typeof Dropzone !== "undefined") Dropzone.autoDiscover = false;
 // ---- 资源配置 ----
 const RESOURCES = {
   banner: {
-    name: "Banner轮播", endpoint: "/api/banner",
+    name: "Banner轮播", endpoint: "/api/banner", sortable: true,
     fields: [
       {k: "kicker", l: "标签文字", t: "text"},
       {k: "title", l: "主标题（支持<br>换行）", t: "text"},
@@ -33,7 +33,7 @@ const RESOURCES = {
     search: ["kicker", "title", "subtitle"],
   },
   "home-stat": {
-    name: "首页统计", endpoint: "/api/home-stat",
+    name: "首页统计", endpoint: "/api/home-stat", sortable: true,
     fields: [
       {k: "label", l: "标签名称", t: "text"},
       {k: "value", l: "数值", t: "text"},
@@ -43,7 +43,7 @@ const RESOURCES = {
     cols: ["label", "value", "unit", "sort_order"],
   },
   "company-image": {
-    name: "厂区图片", endpoint: "/api/company-image",
+    name: "厂区图片", endpoint: "/api/company-image", sortable: true,
     fields: [
       {k: "title", l: "图片标题", t: "text"},
       {k: "image", l: "厂区图片（推荐 960×720，4:3）", t: "image",
@@ -55,7 +55,7 @@ const RESOURCES = {
     cols: ["image", "title", "color", "sort_order", "is_active"],
   },
   "enterprise-card": {
-    name: "企业卡片", endpoint: "/api/enterprise-card",
+    name: "企业卡片", endpoint: "/api/enterprise-card", sortable: true,
     fields: [
       {k: "title", l: "卡片标题", t: "text"},
       {k: "description", l: "描述文字", t: "text"},
@@ -67,7 +67,7 @@ const RESOURCES = {
     cols: ["image", "title", "description", "color", "sort_order"],
   },
   "dosage-form": {
-    name: "剂型管理", endpoint: "/api/dosage-form",
+    name: "剂型管理", endpoint: "/api/dosage-form", sortable: true,
     fields: [
       {k: "name", l: "剂型名称", t: "text"},
       {k: "description", l: "剂型简介", t: "text"},
@@ -77,7 +77,7 @@ const RESOURCES = {
     cols: ["name", "description", "image", "sort_order"],
   },
   trademark: {
-    name: "商标管理", endpoint: "/api/trademark",
+    name: "商标管理", endpoint: "/api/trademark", sortable: true,
     fields: [
       {k: "name", l: "商标名称", t: "text"},
       {k: "sort_order", l: "排序", t: "number", def: 0},
@@ -85,7 +85,7 @@ const RESOURCES = {
     cols: ["name", "sort_order"],
   },
   "func-category": {
-    name: "功能分类", endpoint: "/api/func-category",
+    name: "功能分类", endpoint: "/api/func-category", sortable: true,
     fields: [
       {k: "name", l: "功能名称", t: "text"},
       {k: "sort_order", l: "排序", t: "number", def: 0},
@@ -93,7 +93,7 @@ const RESOURCES = {
     cols: ["name", "sort_order"],
   },
   manufacturer: {
-    name: "生产企业", endpoint: "/api/manufacturer",
+    name: "生产企业", endpoint: "/api/manufacturer", sortable: true,
     fields: [
       {k: "name", l: "企业名称", t: "text", required: true},
       {k: "description", l: "企业简介", t: "textarea"},
@@ -122,6 +122,7 @@ const RESOURCES = {
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
     ],
     cols: ["image", "name", "manufacturer", "form", "trademark", "func", "spec", "clicks"],
+    detailUrl: "/products/", detailCol: "name",   // 「名称」点击→新窗口打开前台产品详情页
     search: ["name", "spec", "form", "trademark", "func", "manufacturer", "indications"],
     pageSize: 20, countUnit: "个产品",   // 列表每页 20 条，搜索框左侧显示总数
   },
@@ -138,7 +139,7 @@ const RESOURCES = {
     search: ["title", "product_name"],
   },
   "news-category": {
-    name: "新闻分类", endpoint: "/api/news-category",
+    name: "新闻分类", endpoint: "/api/news-category", sortable: true,
     fields: [
       {k: "name", l: "分类名称", t: "text"},
       {k: "sort_order", l: "排序", t: "number", def: 0},
@@ -157,6 +158,7 @@ const RESOURCES = {
       {k: "clicks", l: "点击量", t: "number", def: 0},
     ],
     cols: ["image", "title", "category", "date", "clicks"],
+    detailUrl: "/news/", detailCol: "title",      // 「标题」点击→新窗口打开前台资讯详情页
     search: ["title", "category", "content"],
     pageSize: 20, countUnit: "篇文章",   // 列表每页 20 条，搜索框左侧显示总数
   },
@@ -790,7 +792,15 @@ function colLabel(res, col) {
   return labels[col] || col;
 }
 
-function renderCell(col, val, item) {
+function renderCell(col, val, item, res) {
+  // 详情页预览链接：产品列表的「名称」、文章列表的「标题」
+  if (res && res.detailUrl && col === res.detailCol) {
+    const text = String(val === null || val === undefined ? "" : val).replace(/<br>/g, " ").trim();
+    if (!text) return `<span class="text-muted">-</span>`;
+    const inner = text.length > 50 ? text.substring(0, 50) + "..." : text;
+    return `<a class="td-link" href="${res.detailUrl}${item.id}" target="_blank" rel="noopener"`
+      + ` title="在新窗口打开前台页面预览">${escapeHtml(inner)}<span class="td-link-ico">↗</span></a>`;
+  }
   if (col === "is_active") return val ? `<span class="td-tag" style="background:#e8f3ef;color:#67c23a">启用</span>` : `<span class="td-tag" style="background:#fef0f0;color:#f56c6c">停用</span>`;
   if (col === "image") {
     if (!val) return `<span class="text-muted" style="font-size:.78rem">未上传 · 占位图</span>`;
@@ -822,12 +832,31 @@ function colorHex(cls) {
 // ============================================================
 // 表单弹窗
 // ============================================================
-function openCreate(resourceKey) {
+// 「排序」字段的自动默认值：取当前最大排序 + 1，让新增项排在最后。
+// 原来固定默认 0，新增内容会插到最前面，把「首页只显示前 N 个」的最后一个挤出去
+// （典型场景：首页只放 8 个剂型，新增剂型把排序 7 的那个顶掉）。
+async function applyAutoSeq(resourceKey, res, body) {
+  const inp = body.querySelector('input[name="sort_order"]');
+  if (!inp) return;
+  let list = state.crud[resourceKey] && state.crud[resourceKey].list;
+  if (!Array.isArray(list)) {
+    try { list = await api("GET", res.endpoint); } catch (e) { return; }
+  }
+  let max = -1;
+  for (const it of list) {
+    const v = parseInt(it.sort_order, 10);
+    if (!Number.isNaN(v) && v > max) max = v;
+  }
+  inp.value = max + 1;
+}
+
+async function openCreate(resourceKey) {
   state.editingId = null;
   const res = RESOURCES[resourceKey];
   document.getElementById("modalTitle").textContent = `新增${res.name}`;
   const body = document.getElementById("modalBody");
   body.innerHTML = buildForm(res, {});
+  await applyAutoSeq(resourceKey, res, body);
   if (resourceKey === "product") {
     body.innerHTML += `<div class="pi-hint">💡 产品图片：保存产品后，重新点击该产品的「编辑」，即可在弹窗底部拖拽批量上传多张产品图片。</div>`;
   }
@@ -1238,18 +1267,56 @@ function paintCrudRows(resourceKey) {
   let html = `<table class="data-table"><thead><tr>`;
   for (const col of res.cols) html += `<th>${colLabel(res, col)}</th>`;
   html += `<th>操作</th></tr></thead><tbody>`;
+  let rowIdx = -1;
   for (const item of pageItems) {
+    rowIdx++;
     html += `<tr data-search="${escapeHtml(rowSearchText(item))}">`;
-    for (const col of res.cols) html += `<td>${renderCell(col, item[col], item)}</td>`;
-    html += `<td class="td-actions">
-      <button class="btn-edit" onclick="openEdit('${resourceKey}', ${item.id})">编辑</button>
-      <button class="btn-del" onclick="confirmDelete('${resourceKey}', ${item.id})">删除</button>
-    </td></tr>`;
+    for (const col of res.cols) html += `<td>${renderCell(col, item[col], item, res)}</td>`;
+    html += `<td class="td-actions">`;
+    if (res.sortable) {
+      html += `<button class="btn-move" title="上移一位"`
+        + ` onclick="moveSort('${resourceKey}', ${item.id}, -1)"`
+        + `${rowIdx === 0 ? " disabled" : ""}>↑</button>`
+        + `<button class="btn-move" title="下移一位"`
+        + ` onclick="moveSort('${resourceKey}', ${item.id}, 1)"`
+        + `${rowIdx === pageItems.length - 1 ? " disabled" : ""}>↓</button>`;
+    }
+    html += `<button class="btn-edit" onclick="openEdit('${resourceKey}', ${item.id})">编辑</button>`
+      + `<button class="btn-del" onclick="confirmDelete('${resourceKey}', ${item.id})">删除</button>`
+      + `</td></tr>`;
   }
   html += `</tbody></table>`;
   tbody.innerHTML = html;
 
   if (pager) pager.innerHTML = res.pageSize ? pagerHtml(resourceKey, st.page, pages) : "";
+}
+
+// 列表内「上移 / 下移」：与相邻项交换位置，整表顺序交给后端归一化为 0..n-1
+async function moveSort(key, id, dir) {
+  const st = state.crud[key];
+  if (!st || !Array.isArray(st.list)) return;
+  const list = st.list;                       // 后端已按 sort_order 返回，即显示顺序
+  const i = list.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (i < 0) return;
+  if (j < 0) { showToast("已经在最前了", true); return; }
+  if (j >= list.length) { showToast("已经在最后了", true); return; }
+  const ids = list.map(x => x.id);
+  ids[i] = list[j].id;
+  ids[j] = list[i].id;
+  try {
+    await api("POST", `/api/sort/${key}`, { ids });
+    // 本地按新顺序重排并回填 sort_order，避免整块重绘把搜索关键字清掉
+    st.list = ids.map((one, pos) => {
+      const it = list.find(x => x.id === one);
+      it.sort_order = pos;
+      return it;
+    });
+    paintCrudRows(key);
+    showToast("顺序已更新");
+  } catch (e) {
+    showToast("调整顺序失败: " + e.message, true);
+  }
 }
 
 // 分页条：首页/尾页 + 当前页±1，中间用省略号折叠

@@ -201,6 +201,52 @@ def _read_body():
 
 
 # ============================================================
+# 通用排序（后台列表内的「上移 / 下移」）
+# ============================================================
+# 前端 resource key → 模型。只放行真正按 sort_order 展示且列表不分页的模块。
+_SORT_MODELS = {
+    "banner": Banner,
+    "home-stat": HomeStat,
+    "company-image": CompanyImage,
+    "enterprise-card": EnterpriseCard,
+    "dosage-form": DosageForm,
+    "trademark": Trademark,
+    "func-category": FuncCategory,
+    "manufacturer": Manufacturer,
+    "news-category": NewsCategory,
+}
+
+
+@bp.route("/sort/<module>", methods=["POST"])
+@login_required
+def sort_reorder(module):
+    """按前端传来的 id 顺序，把该模块的 sort_order 重排为 0..n-1。
+
+    供后台列表的「上移 / 下移」使用：一次整表重排，顺带把历史数据里
+    重复或缺失的排序值归一化，避免 order_by(sort_order) 结果错乱。
+    """
+    model = _SORT_MODELS.get(module)
+    if model is None:
+        return jsonify({"error": "该模块不支持排序: %s" % module}), 400
+    ids = _read_body().get("ids") or []
+    if not isinstance(ids, list) or not ids:
+        return jsonify({"error": "缺少 ids 参数"}), 400
+    try:
+        ids = [int(i) for i in ids]
+    except (TypeError, ValueError):
+        return jsonify({"error": "ids 必须是整数数组"}), 400
+
+    items = {it.id: it for it in model.query.filter(model.id.in_(ids)).all()}
+    missing = [i for i in ids if i not in items]
+    if missing:
+        return jsonify({"error": "记录不存在: %s" % missing}), 404
+    for pos, iid in enumerate(ids):
+        items[iid].sort_order = pos
+    db.session.commit()
+    return jsonify({"ok": True, "count": len(ids)})
+
+
+# ============================================================
 # 公司信息（单条）
 # ============================================================
 @bp.route("/company", methods=["GET"])
