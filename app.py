@@ -73,21 +73,13 @@ def _migrate_db():
                 _db.session.commit()
                 print(f"[migrate] product.code 回填 {len(rows)} 条")
 
-    # 初始化 3 个默认生产企业（仅当表为空时）
+    # 补齐 3 个默认生产企业（按 name 幂等，与 seed_all() 共用同一实现）。
+    # 原来这里用「表为空就插 3 条」的裸 SQL，全新空库时会和紧随其后的 seed_all()
+    # 的同一批种子撞车，触发 UNIQUE constraint failed: manufacturer.name。
     if insp.has_table("manufacturer"):
-        mfg_count = _db.session.execute(text("SELECT COUNT(*) FROM manufacturer")).scalar()
-        if mfg_count == 0:
-            _db.session.execute(text(
-                "INSERT INTO manufacturer (name, description, sort_order) VALUES "
-                "('邦琪', '广西邦琪药业集团有限公司主体生产基地', 0)"))
-            _db.session.execute(text(
-                "INSERT INTO manufacturer (name, description, sort_order) VALUES "
-                "('百琪', '下属子公司·侧重口服液/糖浆类制剂', 1)"))
-            _db.session.execute(text(
-                "INSERT INTO manufacturer (name, description, sort_order) VALUES "
-                "('葛洪堂', '下属子公司·侧重经典名方与传统膏方', 2)"))
-            _db.session.commit()
-            print("[migrate] manufacturer 种子: 邦琪 / 百琪 / 葛洪堂")
+        from seed import ensure_default_manufacturers
+        ensure_default_manufacturers()
+        _db.session.commit()
 
     # 回填现有产品的 manufacturer_id（默认归「邦琪」）
     if insp.has_table("product") and insp.has_table("manufacturer"):

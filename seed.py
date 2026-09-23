@@ -8,6 +8,37 @@ from models import (Company, Banner, HomeStat, CompanyImage, EnterpriseCard,
 from config import Config
 
 
+# 三个默认生产企业（集团下属企业）。
+# 注意：app._migrate_db()（旧库补种）与 seed_all()（全新库种子）都要写这张表，
+# 而 manufacturer.name 带 UNIQUE 约束，所以两处必须共用下面这一个幂等实现，
+# 否则全新空库会出现「迁移先插 3 条 → 种子再插 3 条」的 UNIQUE 冲突而启动失败。
+DEFAULT_MANUFACTURERS = [
+    ("邦琪",   "广西邦琪药业集团有限公司主体生产基地", 0),
+    ("百琪",   "下属子公司·侧重口服液/糖浆类制剂",     1),
+    ("葛洪堂", "下属子公司·侧重经典名方与传统膏方",     2),
+]
+
+
+def ensure_default_manufacturers():
+    """确保 3 个默认生产企业存在（按 name 幂等），返回 {name: Manufacturer}。
+
+    可安全重复调用：已存在的直接复用，只补缺失项，不触发任何唯一约束冲突。
+    """
+    existing = {m.name: m for m in Manufacturer.query.all()}
+    created = []
+    for name, desc, so in DEFAULT_MANUFACTURERS:
+        if name in existing:
+            continue
+        m = Manufacturer(name=name, description=desc, sort_order=so)
+        db.session.add(m)
+        existing[name] = m
+        created.append(name)
+    if created:
+        db.session.flush()          # 立即取到自增 id，供 manufacturer_id 使用
+        print("[seed] manufacturer 补齐: " + " / ".join(created))
+    return existing
+
+
 def seed_all():
     """建表并插入全部初始数据，仅在数据库为空时执行"""
     db.create_all()
@@ -124,17 +155,8 @@ def seed_all():
     db.session.flush()
 
     # ---- 生产企业（集团下属企业） ----
-    mfg_data = [
-        ("邦琪",   "广西邦琪药业集团有限公司主体生产基地",        0),
-        ("百琪",   "下属子公司·侧重口服液/糖浆类制剂",           1),
-        ("葛洪堂", "下属子公司·侧重经典名方与传统膏方",           2),
-    ]
-    mfg_map = {}
-    for i, (name, desc, so) in enumerate(mfg_data):
-        m = Manufacturer(name=name, description=desc, sort_order=so)
-        db.session.add(m)
-        mfg_map[name] = m
-    db.session.flush()
+    # 走幂等实现：_migrate_db() 可能已经补过这 3 条，这里复用而不重复插入
+    mfg_map = ensure_default_manufacturers()
 
     # ---- 产品 ----
     products_data = [
