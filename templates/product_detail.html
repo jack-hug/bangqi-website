@@ -92,14 +92,6 @@
             <h3>产品介绍</h3>
             <div class="rich-content">{{ (p.content or (p.name ~ '是公司' ~ p.form ~ '代表性品种之一，收载于国家药品标准，历经多年临床验证与工艺打磨。')) | safe }}</div>
           </div>
-          {% if images | length > 3 %}
-          <!-- 产品宣传图（第 4 张起的图片在此展示） -->
-          <div class="row g-3 mt-2">
-            {% for img in images[3:] %}
-            <div class="col-sm-4"><div class="ph {{ img.color or 'ph-gray' }} pd-banner-ph"><img src="{{ img_url(img.image, 'product-banner', img.color or 'ph-gray') }}" alt="{{ p.name }}"></div></div>
-            {% endfor %}
-          </div>
-          {% endif %}
 
         <hr>
 
@@ -131,7 +123,9 @@
 .pd-title::after { display: none; }
 .pd-date { font-size: .8rem; color: var(--bq-gray); margin: 0; }
 .content-card hr { border: none; border-top: 1px solid var(--bq-line); opacity: 1; margin: 1.5rem 0; }
-.pd-ph { height: 300px; }
+/* 产品主图容器统一 1:1（与后台上传提示 800x800 一致）；contain 保证任意比例的上传图都完整显示 */
+.pd-ph { aspect-ratio: 1 / 1; height: auto; background: #f7f8f9; }
+.pd-ph > img { object-fit: contain; }
 .pd-indicators { margin-bottom: .7rem; }
 .pd-indicators [data-bs-target] { width: 22px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
 .pd-indicators .active { background: var(--bq-gold); }
@@ -145,7 +139,6 @@
 .rich-content h1, .rich-content h2, .rich-content h3, .rich-content h4 { color: var(--bq-red); margin-top: 1rem; }
 .rich-content p { margin-bottom: .8rem; }
 .rich-content ul, .rich-content ol { padding-left: 1.4rem; margin-bottom: .8rem; }
-.pd-banner-ph { height: 130px; border-radius: 10px; font-size: .78rem; }
 .hot-list.ranked .hot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 {% endblock %}

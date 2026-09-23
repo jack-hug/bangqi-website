@@ -123,6 +123,7 @@ const RESOURCES = {
     ],
     cols: ["image", "name", "manufacturer", "form", "trademark", "func", "spec", "clicks"],
     search: ["name", "spec", "form", "trademark", "func", "manufacturer", "indications"],
+    pageSize: 20, countUnit: "个产品",   // 列表每页 20 条，搜索框左侧显示总数
   },
   "product-image": {
     name: "产品图片", endpoint: "/api/product-image",
@@ -157,6 +158,7 @@ const RESOURCES = {
     ],
     cols: ["image", "title", "category", "date", "clicks"],
     search: ["title", "category", "content"],
+    pageSize: 20, countUnit: "篇文章",   // 列表每页 20 条，搜索框左侧显示总数
   },
 };
 
@@ -204,6 +206,7 @@ let state = {
   piFilter: "",   // 产品图片管理：按产品筛选
   richTextInstances: {},   // 富文本编辑器实例（key -> Quill）
   pendingRichText: {},     // 待初始化的富文本初始内容（key -> html）
+  crud: {},                // 列表状态（resourceKey -> { res, list, productMap, kw, page }）
 };
 
 let editModal, deleteModal, toastEl;
@@ -746,21 +749,19 @@ async function renderCrudTable(resourceKey) {
   }
   // 通用关键字搜索框（按 search 配置的列过滤表格行）
   if (res.search) {
-    toolbar = `<input type="text" class="table-search" placeholder="输入关键字筛选..." oninput="filterCrudRows(this)">` + toolbar;
+    // 总数统计放搜索框左侧（仅配置了 pageSize 的列表显示）
+    toolbar = (res.pageSize ? `<span class="crud-count" id="crudCount"></span>` : "")
+      + `<input type="text" class="table-search" data-res="${resourceKey}" placeholder="输入关键字筛选..." oninput="filterCrudRows(this)">`
+      + toolbar;
   }
   const hint = resourceKey === "product-image"
     ? `<div class="pi-hint" style="margin:1rem 1.2rem 0">💡 推荐在「产品列表 → 编辑」弹窗底部直接拖拽批量上传产品图片；本页用于维护已有图片的标题与排序。</div>`
     : "";
-  c.innerHTML = `<div class="data-card"><div class="data-toolbar"><h6>${res.name}</h6><div class="d-flex align-items-center gap-2">${toolbar}<button class="btn btn-primary" onclick="openCreate('${resourceKey}')">+ 新增</button></div></div>${hint}<div id="tableBody" style="padding:0 1.2rem 1rem;"><p class="text-muted p-3">加载中...</p></div></div>`;
+  c.innerHTML = `<div class="data-card"><div class="data-toolbar"><h6>${res.name}</h6><div class="d-flex align-items-center gap-2">${toolbar}<button class="btn btn-primary" onclick="openCreate('${resourceKey}')">+ 新增</button></div></div>${hint}<div id="tableBody" style="padding:0 1.2rem 1rem;"><p class="text-muted p-3">加载中...</p></div><div id="crudPager" class="crud-pager"></div></div>`;
   try {
     let list = await api("GET", res.endpoint);
     if (resourceKey === "product-image" && state.piFilter) {
       list = list.filter(i => String(i.product_id) === String(state.piFilter));
-    }
-    const tbody = document.getElementById("tableBody");
-    if (!list.length) {
-      tbody.innerHTML = `<p class="text-muted text-center py-4">暂无数据，点击右上角"新增"添加</p>`;
-      return;
     }
     // 产品图片：把产品名并入行搜索数据，方便按产品名搜索
     let productMap = null;
@@ -768,25 +769,9 @@ async function renderCrudTable(resourceKey) {
       productMap = {};
       for (const p of (state.fkCache["product"] || [])) productMap[p.id] = p.name;
     }
-    let html = `<table class="data-table"><thead><tr>`;
-    for (const col of res.cols) {
-      html += `<th>${colLabel(res, col)}</th>`;
-    }
-    html += `<th>操作</th></tr></thead><tbody>`;
-    for (const item of list) {
-      let searchText = (res.search || []).map(k => (item[k] === null || item[k] === undefined) ? "" : String(item[k])).join(" ");
-      if (productMap) searchText += " " + (productMap[item.product_id] || "");
-      html += `<tr data-search="${escapeHtml(searchText)}">`;
-      for (const col of res.cols) {
-        html += `<td>${renderCell(col, item[col], item)}</td>`;
-      }
-      html += `<td class="td-actions">
-        <button class="btn-edit" onclick="openEdit('${resourceKey}', ${item.id})">编辑</button>
-        <button class="btn-del" onclick="confirmDelete('${resourceKey}', ${item.id})">删除</button>
-      </td></tr>`;
-    }
-    html += `</tbody></table>`;
-    tbody.innerHTML = html;
+    // 缓存数据，交给 paintCrudRows 做「关键字过滤 → 分页 → 渲染」
+    state.crud[resourceKey] = { res, list, productMap, kw: "", page: 1 };
+    paintCrudRows(resourceKey);
   } catch (e) {
     c.innerHTML = `<div class="alert alert-danger m-3">加载失败: ${e.message}</div>`;
   }
@@ -799,6 +784,8 @@ function colLabel(res, col) {
     trademark: "商标", func: "功能", category: "分类",
     unit: "单位", value: "数值", label: "标签",
     image: "图片", product_id: "所属产品",
+    name: "名称", title: "标题", kicker: "标签文字",
+    description: "描述", manufacturer: "生产企业", spec: "规格",
   };
   return labels[col] || col;
 }
@@ -1198,13 +1185,99 @@ function fkBlur(input) {
   }, 180);
 }
 
-// 表格关键字筛选（不重新请求，直接隐藏不匹配行）
+// 表格关键字筛选：在内存数据上过滤后重绘（不重新请求），并回到第 1 页
 function filterCrudRows(input) {
-  const kw = input.value.trim().toLowerCase();
-  document.querySelectorAll("#tableBody tbody tr").forEach(tr => {
-    const s = (tr.dataset.search || "").toLowerCase();
-    tr.style.display = (!kw || s.includes(kw)) ? "" : "none";
-  });
+  const key = input.dataset.res;
+  const st = state.crud[key];
+  if (!st) return;
+  st.kw = input.value;
+  st.page = 1;
+  paintCrudRows(key);
+}
+
+// 渲染当前页：关键字过滤 → 总数统计 → 分页切片 → 表格 + 分页条
+function paintCrudRows(resourceKey) {
+  const st = state.crud[resourceKey];
+  if (!st) return;
+  const { res, list, productMap } = st;
+  const tbody = document.getElementById("tableBody");
+  if (!tbody) return;
+
+  const rowSearchText = (item) => {
+    let s = (res.search || []).map(k => (item[k] === null || item[k] === undefined) ? "" : String(item[k])).join(" ");
+    if (productMap) s += " " + (productMap[item.product_id] || "");
+    return s;
+  };
+
+  const kw = (st.kw || "").trim().toLowerCase();
+  const matched = kw ? list.filter(i => rowSearchText(i).toLowerCase().includes(kw)) : list;
+
+  // 搜索框左侧的总数统计
+  const cnt = document.getElementById("crudCount");
+  if (cnt) {
+    const unit = res.countUnit || "条";
+    cnt.innerHTML = kw
+      ? `筛选出 <strong>${matched.length}</strong> / 共 <strong>${list.length}</strong> ${unit}`
+      : `共 <strong>${list.length}</strong> ${unit}`;
+  }
+
+  const pager = document.getElementById("crudPager");
+  if (!matched.length) {
+    tbody.innerHTML = `<p class="text-muted text-center py-4">`
+      + (list.length ? "没有匹配的记录，请换个关键词" : `暂无数据，点击右上角"新增"添加`)
+      + `</p>`;
+    if (pager) pager.innerHTML = "";
+    return;
+  }
+
+  const size = res.pageSize || matched.length;
+  const pages = Math.max(1, Math.ceil(matched.length / size));
+  st.page = Math.min(Math.max(1, st.page || 1), pages);
+  const pageItems = matched.slice((st.page - 1) * size, (st.page - 1) * size + size);
+
+  let html = `<table class="data-table"><thead><tr>`;
+  for (const col of res.cols) html += `<th>${colLabel(res, col)}</th>`;
+  html += `<th>操作</th></tr></thead><tbody>`;
+  for (const item of pageItems) {
+    html += `<tr data-search="${escapeHtml(rowSearchText(item))}">`;
+    for (const col of res.cols) html += `<td>${renderCell(col, item[col], item)}</td>`;
+    html += `<td class="td-actions">
+      <button class="btn-edit" onclick="openEdit('${resourceKey}', ${item.id})">编辑</button>
+      <button class="btn-del" onclick="confirmDelete('${resourceKey}', ${item.id})">删除</button>
+    </td></tr>`;
+  }
+  html += `</tbody></table>`;
+  tbody.innerHTML = html;
+
+  if (pager) pager.innerHTML = res.pageSize ? pagerHtml(resourceKey, st.page, pages) : "";
+}
+
+// 分页条：首页/尾页 + 当前页±1，中间用省略号折叠
+function pagerHtml(key, page, pages) {
+  if (pages <= 1) return `<span class="pg-info">第 1 / 1 页</span>`;
+  const nums = [];
+  for (let i = 1; i <= pages; i++) {
+    if (i === 1 || i === pages || Math.abs(i - page) <= 1) nums.push(i);
+    else if (nums[nums.length - 1] !== "…") nums.push("…");
+  }
+  let html = `<button class="pg-btn"${page <= 1 ? " disabled" : ""} onclick="goCrudPage('${key}', ${page - 1})">上一页</button>`;
+  for (const n of nums) {
+    html += (n === "…")
+      ? `<span class="pg-gap">…</span>`
+      : `<button class="pg-num${n === page ? " active" : ""}" onclick="goCrudPage('${key}', ${n})">${n}</button>`;
+  }
+  html += `<button class="pg-btn"${page >= pages ? " disabled" : ""} onclick="goCrudPage('${key}', ${page + 1})">下一页</button>`;
+  html += `<span class="pg-info">第 ${page} / ${pages} 页</span>`;
+  return html;
+}
+
+function goCrudPage(key, page) {
+  const st = state.crud[key];
+  if (!st) return;
+  st.page = page;
+  paintCrudRows(key);
+  const card = document.querySelector(".data-card");
+  if (card) window.scrollTo({ top: Math.max(0, card.offsetTop - 90), behavior: "smooth" });
 }
 
 function escapeHtml(s) {
