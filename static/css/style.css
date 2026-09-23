@@ -28,6 +28,13 @@
   --bq-bg: #FAF6F2;           /* 页面暖白底 */
   --bq-line: #ECE6DE;         /* 暖灰分割线 */
 
+  /* 字体栈：Google Fonts（Noto Serif/Sans SC）可达时优先；
+     国内不可达时回退到系统中文黑体/宋体，保证任何网络下中文都有合适字形 */
+  --bq-font-sans: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+                  "Source Han Sans SC", "WenQuanYi Micro Hei", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bq-font-serif: "Noto Serif SC", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC",
+                   "SimSun", Georgia, "Times New Roman", serif;
+
   /* 圆角与阴影（基于朱红调） */
   --bq-radius: 14px;
   --bq-shadow: 0 10px 30px rgba(154, 14, 20, .08);
@@ -37,11 +44,14 @@
 
 
 body {
-  font-family: "Noto Sans SC", system-ui, sans-serif;
+  font-family: var(--bq-font-sans);
   color: var(--bq-ink);
   background: #fff;
+  /* 刘海屏安全区（横屏时避免内容被刘海/圆角遮挡）；不支持 env() 的浏览器自动忽略 */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
-h1, h2, h3, .serif { font-family: "Noto Serif SC", serif; }
+h1, h2, h3, .serif { font-family: var(--bq-font-serif); }
 a { color: var(--bq-red-2); text-decoration: none; transition: color .2s; }
 a:hover { color: var(--bq-gold); }
 
@@ -106,8 +116,8 @@ a:hover { color: var(--bq-gold); }
   object-fit: contain;   /* 保持图片比例，不拉伸 */
   display: block;
 }
-.brand-text { font-family: "Noto Serif SC", serif; font-weight: 900; font-size: 1.25rem; color: var(--bq-red); line-height: 1.1; }
-.brand-text small { display: block; font-family: "Noto Sans SC", sans-serif; font-weight: 400; font-size: .58rem; letter-spacing: .34em; color: var(--bq-gray); }
+.brand-text { font-family: var(--bq-font-serif); font-weight: 900; font-size: 1.25rem; color: var(--bq-red); line-height: 1.1; }
+.brand-text small { display: block; font-family: var(--bq-font-sans); font-weight: 400; font-size: .58rem; letter-spacing: .34em; color: var(--bq-gray); }
 .site-nav .nav-link { color: var(--bq-ink); font-weight: 500; padding: .55rem .9rem; border-radius: 8px; position: relative; }
 .site-nav .nav-link:hover { color: var(--bq-red); background: var(--bq-red-soft); }
 .site-nav .nav-link.active { color: var(--bq-red); font-weight: 700; }
@@ -169,7 +179,7 @@ a:hover { color: var(--bq-gold); }
 .search-thumb {
   width: 44px; height: 44px; border-radius: 8px; flex: none; overflow: hidden;
   display: flex; align-items: center; justify-content: center; color: #fff;
-  font-family: "Noto Serif SC", serif; font-weight: 900; font-size: 1.1rem;
+  font-family: var(--bq-font-serif); font-weight: 900; font-size: 1.1rem;
   background: var(--bq-red-2);
 }
 .search-thumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -232,7 +242,7 @@ a:hover { color: var(--bq-gold); }
 }
 .page-hero::before {
   content: "邦琪"; position: absolute; right: -1rem; bottom: -2.4rem;
-  font-family: "Noto Serif SC", serif; font-weight: 900; font-size: 9rem;
+  font-family: var(--bq-font-serif); font-weight: 900; font-size: 9rem;
   color: rgba(255,255,255,.06); pointer-events: none;
 }
 .page-hero h1 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); font-weight: 900; margin-bottom: .4rem; }
@@ -325,7 +335,10 @@ a:hover { color: var(--bq-gold); }
 .qr-tip { font-size: .8rem; line-height: 1.6; }
 .qr-tip small { color: rgba(255,255,255,.45); }
 .footer-bottom {
-  margin-top: 2.8rem; padding: 1.1rem 0; border-top: 1px solid rgba(255,255,255,.12);
+  margin-top: 2.8rem;
+  /* 底部横条安全区（iPhone home indicator） */
+  padding: 1.1rem 0 calc(1.1rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255,255,255,.12);
   font-size: .76rem; color: rgba(255,255,255,.45);
 }
 
@@ -339,3 +352,57 @@ a:hover { color: var(--bq-gold); }
   .section { padding: 3rem 0; }
   .content-card { padding: 1.4rem 1.2rem; }
 }
+
+/* ============================================================
+   移动端 / 平板（≤991.98px）：触控目标与可读性
+   ------------------------------------------------------------
+   目标：可点区域 ≥44×44px（WCAG 2.5.8 Target Size）、正文字号 ≥16px。
+   只放大「可点区域」与字号，不删减、不隐藏任何内容。
+   ============================================================ */
+@media (max-width: 991.98px) {
+  /* ---- 触控目标 ---- */
+  .footer-links li { margin-bottom: 0; }
+  .footer-links a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; font-size: .95rem; }
+  .side-list a { min-height: 44px; min-width: 44px; font-size: .95rem; }
+  .hot-list li { padding: 0; }
+  .hot-list a { min-height: 44px; min-width: 44px; align-items: center; font-size: .95rem; }
+  .hot-rank { margin-top: 0; }
+  .site-nav .nav-link { display: flex; align-items: center; min-height: 44px; }
+  .page-hero .breadcrumb { padding: 0; margin-bottom: 0; }
+  .page-hero .breadcrumb-item a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+  /* 上一条/下一条：窄屏改竖排，长标题不再被挤成两行 */
+  .prev-next { flex-direction: column; gap: .7rem; }
+  .prev-next a.next { text-align: left; }
+  .prev-next a.next .pn-title { text-align: left; }
+
+  /* ---- 字号：输入框必须 ≥16px，否则 iOS Safari 聚焦时会自动放大整页 ---- */
+  input, select, textarea, .form-control { font-size: 16px; }
+  .search-input-wrap .form-control { font-size: 16px; }
+  .rich-content, .rich-content p { font-size: 1rem; }
+  .content-card p { font-size: 1rem; }
+  .ar-excerpt { font-size: .9rem; }
+  .search-meta { font-size: .8rem; }
+  .ar-meta, .footer-bottom { font-size: .82rem; }
+
+  /* ---- 其它窄屏收敛 ---- */
+  .page-hero { padding: 2.6rem 0 2.2rem; }
+  .page-hero::before { font-size: 5.5rem; }
+  .section { padding: 2.4rem 0; }
+  .sec-head { margin-bottom: 1.8rem; }
+  .qr-block { width: 80px; height: 80px; }
+}
+
+/* 汉堡按钮：触控目标 ≥44px（桌面同样受益，仅放大热区不改视觉） */
+.navbar-toggler { min-width: 44px; min-height: 44px; padding: .35rem .5rem; }
+.navbar-toggler:focus-visible { outline: 2px solid var(--bq-red); outline-offset: 2px; }
+
+/* 图片加载失败（404）时的兜底：隐藏破图，露出容器本身的渐变底色 */
+img.img-fallback { visibility: hidden; }
+
+/* 尊重系统「减少动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .rise { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .corp-card:hover, .btn-bq:hover, .product-card:hover .product-ph,
+  .form-card:hover .form-img-wrap { transform: none !important; }
+}
+

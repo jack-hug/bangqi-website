@@ -88,6 +88,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  /* 图片兜底：任何环境（本地缺图 / 上传文件丢失 / 路径写错）下 img 加载失败时，
+     不再显示破图图标，而是隐藏图片、露出父容器（.ph）的渐变底色。
+     ★ 必须「主动检测 + 事件捕获」双管齐下：
+       图片在 HTML 解析阶段就开始加载，很多 404 在本脚本执行前就已失败，
+       只监听 error 会全部漏掉（实测首屏 6 张 404 图一张都没抓到）。 */
+  function markBrokenImages() {
+    document.querySelectorAll("img").forEach(function (img) {
+      if (img.complete && img.naturalWidth === 0) img.classList.add("img-fallback");
+    });
+  }
+  document.addEventListener("error", function (e) {
+    var t = e.target;                                   // error 不冒泡 → 用捕获阶段
+    if (t && t.tagName === "IMG") t.classList.add("img-fallback");
+  }, true);
+  markBrokenImages();
+  window.addEventListener("load", markBrokenImages);    // 补一次：懒加载 / 迟到的失败
+
   /* 导航高亮当前页 */
   const path = location.pathname;
   document.querySelectorAll(".site-nav .nav-link").forEach((a) => {

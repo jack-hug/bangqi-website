@@ -58,7 +58,8 @@
                 {% for img in images %}
                 <div class="carousel-item {{ 'active' if loop.first }}">
                   <div class="ph {{ img.color or 'ph-green' }} pd-ph">
-                    <img src="{{ img_url(img.image, 'product-detail', img.color or p.color) }}" alt="{{ p.name }}">
+                    <img src="{{ img_url(img.image, 'product-detail', img.color or p.color) }}" alt="{{ p.name }}"
+                         {% if not loop.first %}loading="lazy" {% endif %}decoding="async">
                   </div>
                 </div>
                 {% endfor %}
@@ -126,19 +127,37 @@
 /* 产品主图容器统一 1:1（与后台上传提示 800x800 一致）；contain 保证任意比例的上传图都完整显示 */
 .pd-ph { aspect-ratio: 1 / 1; height: auto; background: #f7f8f9; }
 .pd-ph > img { object-fit: contain; }
-.pd-indicators { margin-bottom: .7rem; }
-.pd-indicators [data-bs-target] { width: 22px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
-.pd-indicators .active { background: var(--bq-gold); }
+.pd-indicators { margin-bottom: .7rem; gap: .3rem; }
+/* 视觉仍是 22×4 细条，触控热区加高到 44px */
+.pd-indicators [data-bs-target] {
+  width: 22px; height: 44px; margin: 0 3px;
+  background: transparent; border: none; border-radius: 0;
+  box-sizing: border-box; text-indent: -999px; opacity: 1;
+  position: relative;
+}
+.pd-indicators [data-bs-target]::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 20px;
+  height: 4px; border-radius: 2px; background: rgba(255,255,255,.5);
+  transition: background .2s;
+}
+.pd-indicators .active::after { background: var(--bq-gold); }
 .pd-table { width: 100%; border-collapse: collapse; }
 .pd-table th, .pd-table td { border-bottom: 1px solid var(--bq-line); padding: .8rem .9rem; font-size: .9rem; vertical-align: top; }
 .pd-table th { width: 96px; color: var(--bq-red); font-weight: 700; white-space: nowrap; }
 .pd-table tr:last-child th, .pd-table tr:last-child td { border-bottom: none; }
 .pd-edit-zone h3 { margin-top: 1.2rem; }
-.rich-content { line-height: 1.9; color: #4a5852; font-size: .95rem; text-align: justify; }
+.rich-content { line-height: 1.9; color: #4a5852; font-size: 1rem; text-align: justify; }
 .rich-content img { max-width: 100%; height: auto; border-radius: 8px; margin: .5rem 0; }
 .rich-content h1, .rich-content h2, .rich-content h3, .rich-content h4 { color: var(--bq-red); margin-top: 1rem; }
 .rich-content p { margin-bottom: .8rem; }
 .rich-content ul, .rich-content ol { padding-left: 1.4rem; margin-bottom: .8rem; }
 .hot-list.ranked .hot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 移动端：产品参数表保持两列不溢出；正文与表格字号不低于 1rem */
+@media (max-width: 767.98px) {
+  .pd-table th, .pd-table td { padding: .7rem .55rem; font-size: .95rem; }
+  .pd-table th { width: 78px; }
+  .pd-date { font-size: .86rem; line-height: 1.7; }
+}
 </style>
 {% endblock %}

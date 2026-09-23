@@ -2,6 +2,13 @@
 {% block title %}产品中心 - 邦琪药业{% endblock %}
 
 {% block content %}
+{# 已生效的筛选条件：结果栏与移动端筛选面板共用，须先于两者定义 #}
+{% set active_filters = [] %}
+{% if cur_form %}{% set _ = active_filters.append(('form', '剂型', cur_form)) %}{% endif %}
+{% if cur_manufacturer %}{% set _ = active_filters.append(('manufacturer', '生产企业', cur_manufacturer)) %}{% endif %}
+{% if cur_trademark %}{% set _ = active_filters.append(('trademark', '商标', cur_trademark)) %}{% endif %}
+{% if cur_func %}{% set _ = active_filters.append(('func', '功能', cur_func)) %}{% endif %}
+
 <!-- 页面横幅 -->
 <div class="page-hero">
   <div class="container">
@@ -17,9 +24,17 @@
 
 <div class="container py-5">
   <div class="row g-4">
-    <div class="col-lg-3">
+    <div class="col-lg-3 filter-collapse"{% if active_filters %} data-has-filter="1"{% endif %}>
+      {# 移动端把筛选面板折叠起来（省下近一屏高度），桌面端始终展开。
+         ★ 折叠由 JS 加 .filter-collapsed 实现（渐进增强）：脚本失效时面板保持展开，
+           内容绝不丢失；已选条件时也不折叠。 #}
+      <button type="button" class="filter-toggle" id="filterToggle" aria-expanded="true" aria-controls="filterPanel">
+        <span>筛选产品</span>
+        <span class="filter-toggle-hint">{% if active_filters %}已选 {{ active_filters | length }} 项{% else %}剂型 / 生产企业 / 商标 / 功能{% endif %}</span>
+        <span class="filter-toggle-arrow" aria-hidden="true">&#9662;</span>
+      </button>
       <!-- 筛选列表：按剂型 / 按商标 / 按功能 / 按生产企业，可随时扩展 -->
-      <aside class="layout-side sticky-top" style="top: 90px;">
+      <aside class="layout-side sticky-top" id="filterPanel" style="top: 90px;">
         <div class="side-group-title">产品筛选</div>
         <div class="p-3">
           <div class="filter-group">
@@ -71,13 +86,7 @@
     </div>
 
     <div class="col-lg-9">
-      {# 已生效的筛选条件：每项一个带红叉的标签，点击即取消；右侧另有「全部清除筛选」 #}
-      {% set active_filters = [] %}
-      {% if cur_form %}{% set _ = active_filters.append(('form', '剂型', cur_form)) %}{% endif %}
-      {% if cur_manufacturer %}{% set _ = active_filters.append(('manufacturer', '生产企业', cur_manufacturer)) %}{% endif %}
-      {% if cur_trademark %}{% set _ = active_filters.append(('trademark', '商标', cur_trademark)) %}{% endif %}
-      {% if cur_func %}{% set _ = active_filters.append(('func', '功能', cur_func)) %}{% endif %}
-
+      {# 结果栏：每项一个带红叉的标签，点击即取消；右侧另有「全部清除筛选」（active_filters 在上方定义） #}
       <div class="result-bar mb-4">
         <div class="result-bar-main">
           <span class="result-count">共 <strong>{{ total }}</strong> 个产品</span>
@@ -99,20 +108,24 @@
       <div class="row g-4">
         {% for p in products %}
         <div class="col-sm-6 col-lg-4 col-xl-3">
-          <div class="product-card">
+          {# ★ 整张卡片即链接（v1.4.0）：触屏设备没有 hover，原设计唯一入口是
+             opacity:0 遮罩里的 90×31 隐形容器，手机点卡片大片区域毫无反应。
+             卡片内的「点击查看」因此改为 span（a 不能嵌套 a）。 #}
+          <a class="product-card" href="/products/{{ p.id }}" aria-label="{{ p.name }}：查看产品详情">
             {% if p.manufacturer %}
             <span class="product-mfg-badge" title="生产企业">{{ p.manufacturer }}</span>
             {% endif %}
-            <!-- 产品图片：未上传时显示纯色PNG占位图，悬停显示名称/功能主治/查看按钮 -->
+            <!-- 产品图片：未上传时显示纯色PNG占位图；悬停/触屏常驻显示名称、功能主治与入口 -->
             <div class="ph {{ p.color }} product-ph">
-              <img src="{{ img_url(p.image, 'product', p.color) }}" alt="{{ p.name }}">
+              <img src="{{ img_url(p.image, 'product', p.color) }}" alt="{{ p.name }}"
+                   loading="lazy" decoding="async">
             </div>
             <div class="product-overlay">
               <h6>{{ p.name }}</h6>
               <p>{{ p.indications }}</p>
-              <a href="/products/{{ p.id }}" class="btn-view">点击查看</a>
+              <span class="btn-view">点击查看</span>
             </div>
-          </div>
+          </a>
         </div>
         {% else %}
         <div class="col-12"><div class="empty-tip">暂无符合筛选条件的产品，请调整筛选条件。</div></div>
@@ -190,7 +203,9 @@
 }
 .filter-clear:hover { color: var(--bq-red); border-color: var(--bq-red); }
 
-.product-card { position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow); }
+/* 卡片<a>化：沿用原卡片外观，仅清掉链接默认色与下划线 */
+.product-card { display: block; position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow); color: inherit; }
+.product-card:hover, .product-card:focus, .product-card:active { color: inherit; text-decoration: none; }
 .product-ph { height: 230px; transition: filter .35s, transform .35s; }
 .product-overlay {
   position: absolute; inset: 0; padding: 1.2rem;
@@ -200,15 +215,113 @@
 }
 .product-card:hover .product-ph { filter: blur(5px) opacity(.4); transform: scale(1.06); }
 .product-card:hover .product-overlay { opacity: 1; }
-.product-overlay h6 { font-family: "Noto Serif SC", serif; font-size: 1.02rem; font-weight: 700; margin: 0; }
+.product-overlay h6 { font-family: var(--bq-font-serif); font-size: 1.02rem; font-weight: 700; margin: 0; }
 .product-overlay p { font-size: .74rem; color: rgba(255,255,255,.85); line-height: 1.6; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .btn-view {
+  display: inline-flex; align-items: center; justify-content: center;
   margin-top: .2rem; font-size: .78rem; border: 1px solid rgba(255,255,255,.65); color: #fff;
   border-radius: 999px; padding: .32rem 1.2rem; transition: all .2s;
 }
-.btn-view:hover { background: var(--bq-gold); border-color: var(--bq-gold); color: #fff; }
+.product-card:hover .btn-view { background: var(--bq-gold); border-color: var(--bq-gold); color: #fff; }
+
+/* ============================================================
+   触屏设备（无 hover）：产品名 + 功能主治 + 入口「常驻显示」
+   桌面端 hover 效果（.product-overlay 淡入、图片模糊）原样保留
+   ============================================================ */
+@media (hover: none) {
+  .product-card .product-ph { filter: none; transform: none; }
+  .product-overlay {
+    opacity: 1;
+    align-items: stretch;
+    text-align: left;
+    justify-content: flex-end;
+    gap: .3rem;
+    padding: .85rem .95rem;
+    background: linear-gradient(to top, rgba(154, 14, 20, .94) 0%, rgba(154, 14, 20, .62) 52%, transparent 100%);
+  }
+  .product-overlay h6 { font-size: 1rem; }
+  .product-overlay p { font-size: .8rem; -webkit-line-clamp: 2; }
+  /* 触控目标 ≥44px */
+  .btn-view { align-self: flex-start; min-height: 44px; padding: .5rem 1.35rem; font-size: .8rem; }
+}
 .empty-tip { padding: 3rem 1rem; text-align: center; color: var(--bq-gray); border: 1px dashed var(--bq-line); border-radius: var(--bq-radius); }
 .pagination-bq .page-link { color: var(--bq-red); border: 1px solid var(--bq-line); margin: 0 3px; border-radius: 8px !important; font-size: .88rem; }
 .pagination-bq .page-item.active .page-link { background: var(--bq-red); border-color: var(--bq-red); color: #fff; }
+
+/* ---- 移动端筛选面板折叠（按钮 + JS 渐进增强）----
+   不使用 <details>：Chrome 对未展开内容用的是 content-visibility:hidden，
+   CSS 的 display 覆盖不可靠，会导致桌面端整个面板被隐藏（实测踩过）。
+   这里默认不折叠，只有 JS 主动加 .filter-collapsed 才收起，
+   因此脚本失效时面板始终可见，内容不会丢失。 */
+.filter-toggle { display: none; }
+@media (max-width: 991.98px) {
+  .filter-toggle {
+    display: flex; align-items: center; gap: .6rem; width: 100%;
+    min-height: 48px; padding: .7rem 1rem; margin-bottom: .75rem;
+    background: #fff; border: 1px solid var(--bq-line); border-radius: 12px;
+    font-size: 1rem; font-weight: 700; color: var(--bq-red);
+    cursor: pointer; text-align: left;
+  }
+  .filter-toggle-hint { margin-left: auto; font-size: .82rem; font-weight: 400; color: var(--bq-gray); }
+  .filter-toggle-arrow { font-size: .8rem; transition: transform .25s; }
+  .filter-collapse:not(.filter-collapsed) .filter-toggle-arrow { transform: rotate(180deg); }
+  .filter-toggle:focus-visible { outline: 2px solid var(--bq-red); outline-offset: 2px; }
+  /* 只有 JS 明确折叠时才隐藏 */
+  .filter-collapse.filter-collapsed #filterPanel { display: none; }
+  .filter-collapse.filter-collapsed .filter-toggle { margin-bottom: 0; }
+}
+
+/* 分页与筛选标签的触控目标（触屏断点 ≥44px） */
+@media (max-width: 991.98px) {
+  .pagination-bq .page-link { min-height: 44px; display: flex; align-items: center; justify-content: center; min-width: 44px; }
+  .filter-tag { min-height: 44px; display: inline-flex; align-items: center; padding: .28rem .95rem; }
+  .filter-chip { min-height: 44px; padding-left: .95rem; padding-right: .55rem; }
+  .filter-chip-x { width: 1.35rem; height: 1.35rem; font-size: .72rem; }
+  .filter-clear { min-height: 44px; display: inline-flex; align-items: center; border-bottom: none; }
+  .result-bar { gap: .5rem .75rem; }
+  .filter-group { margin-bottom: 1rem; }
+}
 </style>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+/* 移动端筛选面板折叠（渐进增强）
+   ★ 面板默认是展开的（服务端渲染不带折叠类），只有本脚本执行成功才可能收起，
+     所以脚本报错/被拦截时，筛选条件依然完整可见可用。 */
+(function () {
+  var wrap = document.querySelector(".filter-collapse");
+  var btn = document.getElementById("filterToggle");
+  var panel = document.getElementById("filterPanel");
+  if (!wrap || !btn || !panel) return;
+
+  var mq = window.matchMedia("(min-width: 992px)");
+  var userOpened = false;   // 用户手动展开过 → 不再自动收起
+
+  function syncAria() {
+    btn.setAttribute("aria-expanded",
+      String(mq.matches || (!wrap.classList.contains("filter-collapsed"))));
+  }
+
+  btn.addEventListener("click", function () {
+    var collapsed = wrap.classList.toggle("filter-collapsed");
+    if (!collapsed) userOpened = true;
+    syncAria();
+  });
+
+  function onBreakpoint() {
+    if (mq.matches) {
+      wrap.classList.remove("filter-collapsed");   // 桌面：始终展开
+    } else if (!wrap.dataset.hasFilter && !userOpened) {
+      wrap.classList.add("filter-collapsed");      // 移动端：无筛选条件时默认收起
+    }
+    syncAria();
+  }
+
+  if (mq.addEventListener) mq.addEventListener("change", onBreakpoint);
+  else if (mq.addListener) mq.addListener(onBreakpoint);
+  onBreakpoint();
+})();
+</script>
+{% endblock %}
+

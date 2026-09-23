@@ -45,7 +45,8 @@
           <div class="d-flex gap-3 align-items-center">
             <!-- 文章配图：未上传时默认显示企业 logo（NEWS_DEFAULT_IMAGE） -->
             <div class="ph {{ ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4] }}">
-              <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-thumb', ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4]) }}" alt="{{ n.title }}">
+              <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-thumb', ['ph-green','ph-ta','ph-am','ph-ti'][loop.index0 % 4]) }}"
+                 alt="{{ n.title }}" loading="lazy" decoding="async">
             </div>
             <div class="flex-grow-1 min-w-0">
               <span class="ar-cat">{{ n.category }}</span>
@@ -68,6 +69,13 @@
 <style>
 .article-row .ph { width: 132px; height: 99px; border-radius: 10px; flex: none; }
 .min-w-0 { min-width: 0; }
+
+/* 窄屏：缩略图按 4:3 等比缩小，给标题留出更多宽度 */
+@media (max-width: 575.98px) {
+  .article-row .ph { width: 104px; height: 78px; }
+  .ar-title { font-size: .98rem; }
+  .ar-excerpt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
 .empty-tip { padding: 3rem 1rem; text-align: center; color: var(--bq-gray); }
 </style>
 {% endblock %}

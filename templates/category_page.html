@@ -47,7 +47,8 @@
         {% set hero_color = hero_colors[cat_list.index(active) % 4] %}
         <!-- 栏目头图：未上传时显示纯色PNG占位图 -->
         <div class="ph {{ hero_color }} cat-hero">
-          <img src="{{ img_url(page.image, 'cat-hero', hero_color) }}" alt="{{ page.title }}">
+          <img src="{{ img_url(page.image, 'cat-hero', hero_color) }}" alt="{{ page.title }}"
+               loading="lazy" decoding="async">
         </div>
 
         {% for subtitle, body in page.sections %}
@@ -57,8 +58,8 @@
 
         {% if page.sections | length < 3 %}
         <div class="row g-3 mt-3">
-          <div class="col-sm-6"><div class="ph ph-gray cat-img"><img src="{{ img_url(None, 'cat-img', 'ph-gray') }}" alt="栏目配图"></div></div>
-          <div class="col-sm-6"><div class="ph ph-ta cat-img"><img src="{{ img_url(None, 'cat-img', 'ph-ta') }}" alt="栏目配图"></div></div>
+          <div class="col-sm-6"><div class="ph ph-gray cat-img"><img src="{{ img_url(None, 'cat-img', 'ph-gray') }}" alt="栏目配图" loading="lazy" decoding="async"></div></div>
+          <div class="col-sm-6"><div class="ph ph-ta cat-img"><img src="{{ img_url(None, 'cat-img', 'ph-ta') }}" alt="栏目配图" loading="lazy" decoding="async"></div></div>
         </div>
         {% endif %}
       </div>
@@ -76,7 +77,13 @@
 }
 .cat-stat strong { display: block; font-size: 1.6rem; font-weight: 900; color: var(--bq-red); line-height: 1.2; }
 .cat-stat span { font-size: .78rem; color: var(--bq-gray); }
-.cat-hero { height: 240px; border-radius: 12px; margin-bottom: .6rem; }
-.cat-img { height: 150px; border-radius: 10px; font-size: .78rem; }
+/* 头图/配图按后台出图规范的比例定高（cat-hero 960×300 = 3.2:1；cat-img 480×300 = 1.6:1），
+   原固定 240px/150px 在手机上会把图片裁到只剩四成可见 */
+.cat-hero { height: auto; aspect-ratio: 3.2 / 1; width: 100%; border-radius: 12px; margin-bottom: .6rem; }
+.cat-img { height: auto; aspect-ratio: 1.6 / 1; border-radius: 10px; font-size: .78rem; }
+@media (max-width: 575.98px) {
+  .cat-stat { min-width: 96px; padding: .8rem .5rem; }
+  .cat-stat strong { font-size: 1.35rem; }
+}
 </style>
 {% endblock %}

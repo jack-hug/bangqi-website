@@ -6,7 +6,7 @@
 {% block body_class %}home-v1 tb-no-anim{% endblock %}
 
 {% block extra_css %}
-<link href="https://unpkg.com/swiper@11.2.10/swiper-bundle.min.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
 <style>
 /* ============ 主页专用：topbar 平滑显隐 + swiper 避开导航栏 ============ */
 :root {
@@ -107,17 +107,29 @@ body.home-v1 #site-nav {
   display: flex; flex-direction: column; gap: 1rem;
   z-index: 20;
 }
+/* 视觉仍是 12×12 圆点，触控热区扩到 44×44：
+   用透明 border 撑开热区、负 margin 抵消占位（视觉间距不变），
+   圆点本体交给 ::after 绘制 */
 .home-swiper .swiper-pagination-bullet {
   width: 12px; height: 12px;
+  box-sizing: content-box;
+  border: 16px solid transparent;
+  margin: -16px 0 !important;
+  background: transparent;
+  opacity: 1;
+  position: relative;
+  cursor: pointer;
+}
+.home-swiper .swiper-pagination-bullet::after {
+  content: ""; position: absolute; inset: 0;
+  border-radius: 50%;
   background: rgba(255,255,255,.7);
   border: 2px solid var(--bq-red);
   opacity: .55;
-  margin: 0 !important;
-  transition: all .3s cubic-bezier(.2,.8,.3,1);
   box-shadow: 0 2px 6px rgba(0,0,0,.18);
-  cursor: pointer;
+  transition: opacity .3s, background .3s, transform .3s cubic-bezier(.2,.8,.3,1);
 }
-.home-swiper .swiper-pagination-bullet-active {
+.home-swiper .swiper-pagination-bullet-active::after {
   background: var(--bq-red);
   opacity: 1;
   transform: scale(1.35);
@@ -205,9 +217,20 @@ body.home-v1 #site-nav {
 .intro-text { color: #4a5852; line-height: 2.05; font-size: 1.05rem; text-align: justify; }
 .factory-ph { height: 460px; position: relative; }
 .factory-ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.factory-indicators { margin-bottom: .8rem; }
-.factory-indicators [data-bs-target] { width: 28px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); border: none; }
-.factory-indicators .active { background: var(--bq-gold); }
+.factory-indicators { margin-bottom: .8rem; gap: .35rem; }
+/* 视觉仍是 28×4 细条，热区加高到 44px（条仍纵向居中，肉眼无差别） */
+.factory-indicators [data-bs-target] {
+  width: 28px; height: 44px; margin: 0 4px;
+  background: transparent; border: none; border-radius: 0;
+  box-sizing: border-box; text-indent: -999px; opacity: 1;
+  position: relative;
+}
+.factory-indicators [data-bs-target]::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 20px;
+  height: 4px; border-radius: 2px; background: rgba(255,255,255,.5);
+  transition: background .2s;
+}
+.factory-indicators .active::after { background: var(--bq-gold); }
 .shadow-bq { box-shadow: var(--bq-shadow-lg); }
 .sec-kicker.not-center::before { display: none; }
 
@@ -228,7 +251,7 @@ body.home-v1 #site-nav {
 .stat-ring-bg { stroke: rgba(230, 33, 41, .10); }
 .stat-ring-fg { stroke: var(--bq-red); stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset .15s linear; }
 .stat-circle:hover .stat-ring-fg { stroke: var(--bq-red-2); }
-.stat-num-wrap { position: relative; z-index: 2; padding: 0 6px; display: flex; align-items: baseline; justify-content: center; gap: 3px; font-family: "Noto Serif SC", serif; }
+.stat-num-wrap { position: relative; z-index: 2; padding: 0 6px; display: flex; align-items: baseline; justify-content: center; gap: 3px; font-family: var(--bq-font-serif); }
 .stat-num { font-size: 2.5rem; font-weight: 900; color: var(--bq-red); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
 .stat-unit { font-size: .92rem; color: var(--bq-red-2); font-weight: 700; }
 .stat-label { font-size: 1.02rem; font-weight: 600; color: var(--bq-ink); letter-spacing: .04em; }
@@ -267,7 +290,7 @@ body.home-v1 #site-nav {
   padding: .9rem; text-align: center;
 }
 .form-card:hover .form-overlay { opacity: 1; }
-.form-name { font-family: "Noto Serif SC", serif; font-size: clamp(1.1rem, 1.6vw, 1.5rem); font-weight: 900; }
+.form-name { font-family: var(--bq-font-serif); font-size: clamp(1.1rem, 1.6vw, 1.5rem); font-weight: 900; }
 .form-desc { font-size: clamp(.72rem, .86vw, .86rem); color: rgba(255,255,255,.85); letter-spacing: .06em; }
 .form-go { margin-top: .35rem; font-size: clamp(.7rem, .82vw, .84rem); border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: .26rem .95rem; }
 @media (max-width: 991.98px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -282,7 +305,7 @@ body.home-v1 #site-nav {
 .nf-media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .nf-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 3.4rem 2.4rem 2.4rem; background: linear-gradient(to top, rgba(60,12,14,.95) 8%, rgba(60,12,14,.6) 52%, transparent); color: #fff; }
 .nf-cat { display: inline-block; font-size: .82rem; font-weight: 700; color: #fff; background: var(--bq-gold); border-radius: 999px; padding: .26rem .95rem; letter-spacing: .08em; }
-.nf-title { font-family: "Noto Serif SC", serif; font-size: clamp(1.45rem, 2.5vw, 1.95rem); font-weight: 900; line-height: 1.45; margin: .85rem 0 .65rem; }
+.nf-title { font-family: var(--bq-font-serif); font-size: clamp(1.45rem, 2.5vw, 1.95rem); font-weight: 900; line-height: 1.45; margin: .85rem 0 .65rem; }
 .nf-excerpt { font-size: .98rem; color: rgba(255,255,255,.82); line-height: 1.75; margin: 0 0 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .nf-meta { font-size: .85rem; color: rgba(255,255,255,.7); display: flex; justify-content: space-between; align-items: center; }
 .nf-meta em { font-style: normal; color: #e6c47c; font-weight: 600; }
@@ -318,7 +341,7 @@ body.home-v1 #site-nav {
 .corp-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
 .corp-img-wrap, .corp-ph { aspect-ratio: 37 / 65; }
 .corp-info { padding: 1.4rem 1.6rem 1.6rem; }
-.corp-info h4 { font-family: "Noto Serif SC", serif; font-size: 1.32rem; font-weight: 700; color: var(--bq-red); margin-bottom: .5rem; }
+.corp-info h4 { font-family: var(--bq-font-serif); font-size: 1.32rem; font-weight: 700; color: var(--bq-red); margin-bottom: .5rem; }
 .corp-info p { font-size: .95rem; color: var(--bq-gray); margin: 0; line-height: 1.65; }
 
 /* ============ Footer（slide 6） ============ */
@@ -357,7 +380,7 @@ body.home-v1 #site-nav {
 .sec-head { text-align: center; margin-bottom: 3rem; }
 .sec-kicker { font-size: .92rem; letter-spacing: .32em; color: var(--bq-red); font-weight: 700; position: relative; display: inline-block; padding-bottom: .75rem; margin-bottom: 1.1rem; }
 .sec-kicker::before { content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 36px; height: 2px; background: var(--bq-gold); }
-.sec-title { font-family: "Noto Serif SC", serif; font-size: clamp(2.2rem, 3.8vw, 3rem); font-weight: 900; color: var(--bq-ink); margin-bottom: .85rem; }
+.sec-title { font-family: var(--bq-font-serif); font-size: clamp(2.2rem, 3.8vw, 3rem); font-weight: 900; color: var(--bq-ink); margin-bottom: .85rem; }
 .sec-sub { color: var(--bq-gray); font-size: 1.05rem; }
 .sec-title.text-start { text-align: left; }
 .sec-kicker.not-center { padding-bottom: .75rem; }
@@ -372,6 +395,168 @@ body.home-v1 #site-nav {
   .ns-item { padding: .7rem 1rem; gap: .65rem; min-height: 64px; }
   .ns-num { font-size: 1.2rem; }
   .news-feature { min-height: 280px; }
+}
+
+/* ============================================================
+   ★ 移动端 / 平板（≤991.98px）：首页改为「普通文档流」
+   ------------------------------------------------------------
+   背景（2026-09-23 真触摸实测）：
+   手机屏幕上每屏内容 878~2269px，容器只有 769px，但手指上滑时
+   slide.scrollTop 恒为 0、activeIndex 却递增 —— 手势被 Swiper 当成翻屏，
+   屏内一次都没滚动过；叠加 .slide-inner 的 justify-content:center，
+   超高内容「上下同时溢出」，上溢部分永久不可达
+   （「八大剂型」标题实测 top=-556px，整个标题+前 3 张卡都看不到）。
+   处理：本断点下不初始化 Swiper，整页按文档流自上而下滚动，
+   内容 100% 可达、手势零冲突；Swiper 脚本挂掉也不影响。
+   桌面端（≥992px）完全不变。
+   ============================================================ */
+@media (max-width: 991.98px) {
+  /* 页面恢复可滚动 */
+  body.home-v1 { overflow-x: hidden; overflow-y: auto; }
+
+  /* topbar 回归文档流并常显；导航改为 sticky 吸顶（不再脱离文档流遮挡内容） */
+  body.home-v1 #site-topbar,
+  body.home-v1 #site-topbar.tb-hide {
+    position: relative;
+    top: auto; left: auto; right: auto;
+    max-height: none;
+    opacity: 1;
+    padding-top: .45rem;
+    padding-bottom: .45rem;
+    transition: none;
+  }
+  body.home-v1 #site-nav {
+    position: sticky !important;
+    top: 0;
+    background: rgba(255, 255, 255, .94);
+    transition: none;
+  }
+
+  /* 容器与每一屏按内容高度自然撑开 */
+  .home-swiper,
+  body.home-v1.tb-no-anim .home-swiper {
+    position: static;
+    top: auto; bottom: auto;
+    height: auto;
+    transition: none;
+  }
+  .home-swiper > .swiper-wrapper {
+    display: block;
+    transform: none !important;
+    height: auto;
+  }
+  .home-swiper .swiper-slide {
+    display: block;
+    height: auto !important;
+    width: 100%;              /* 兜底：即使 Swiper 的 CSS 未加载，宽度也由自己保证 */
+    overflow: visible;
+  }
+  .home-swiper .swiper-slide + .swiper-slide { border-top: 1px solid var(--bq-line); }
+  .slide-inner {
+    min-height: 0;
+    /* ★ 关键：不能再用 flex 居中 —— 内容超高时会上下同时溢出，上溢部分找不回来 */
+    justify-content: flex-start;
+    padding: 2.8rem 0 3rem;
+  }
+  .home-swiper .swiper-pagination { display: none; }
+
+  /* 入场：默认直接可见（脚本失效也不影响）；.m-anim 由脚本加，做滚动入场动画 */
+  .slide-enter { opacity: 1; transform: none; }
+  .slide-enter.m-anim {
+    opacity: 0; transform: translateY(26px);
+    transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.3,1);
+  }
+  .slide-enter.m-anim.m-in { opacity: 1; transform: none; }
+
+  /* ---- Banner 屏：容器比例对齐后台出图规范 1920×1080（16:9）----
+     原来是「固定铺满视口高度」，手机上 1920×750 的图只可见 21%；
+     按 16:9 定高后图片零裁切完整显示，文案字号同步收紧以保证放得下。 */
+  .home-slide-banner .carousel,
+  .home-slide-banner .carousel-inner,
+  .home-slide-banner .carousel-item { height: auto; min-height: 0; }
+  .home-slide-banner .banner-ph { aspect-ratio: 16 / 9; height: auto; min-height: 0; }
+  /* 16:9 容器 + 16:9 出图 = 零裁切，不需要为亚像素缝隙留 1.02 的余量 */
+  .home-slide-banner .banner-ph > img { transform: none; }
+  .banner-caption { padding: 0 .9rem; }
+  .banner-kicker { font-size: .66rem; letter-spacing: .2em; padding: .22rem .8rem; margin-bottom: .6rem; }
+  .banner-caption h2 { font-size: clamp(1.15rem, 5.4vw, 1.7rem); line-height: 1.3; margin-bottom: .45rem; }
+  .banner-caption p { font-size: .82rem; margin-bottom: .6rem; }
+  .banner-caption .btn { padding: .42rem 1.15rem; font-size: .8rem; }
+
+  /* ---- 公司简介屏 ---- */
+  .factory-ph { height: auto; aspect-ratio: 4 / 3; }   /* 出图规范 960×720 = 4:3 → 零裁切 */
+  .intro-text { font-size: .95rem; line-height: 1.9; }
+  .stat-row { gap: 1.3rem; margin-top: 1.8rem; }
+  .stat-label { font-size: .9rem; }
+
+  /* ---- 八大剂型屏：2 列自适应，高度由宽度决定（不再让 JS 按「2 行」算固定高度，
+         手机实际 4 行，算出来只会把总高翻倍） ---- */
+  .form-grid { grid-template-columns: repeat(2, 1fr); gap: .8rem; }
+  .form-card { height: auto; width: 100%; aspect-ratio: 1 / 1; }
+  .form-name { font-size: 1rem; }
+  .form-desc { font-size: .7rem; }
+  .form-go { font-size: .68rem; padding: .22rem .7rem; }
+
+  /* ---- 邦琪资讯屏 ---- */
+  .news-feature { min-height: 300px; }
+  .ns-title { font-size: 1rem; }
+  .ns-meta { font-size: .9rem; }
+  .nf-overlay { padding: 1.6rem 1.1rem 1.1rem; }
+  .nf-title { font-size: 1.2rem; }
+  .nf-excerpt { font-size: .86rem; }
+  .ns-item { min-height: 0; }
+
+  /* ---- 走近邦琪屏：37:65 竖版海报在手机上单张近 650px，改为左图右文横向卡片 ---- */
+  .corp-card { display: flex; align-items: stretch; }
+  .corp-img-wrap, .corp-ph { aspect-ratio: 1 / 1; width: 116px; flex: none; }
+  .corp-info { padding: .85rem 1rem; }
+  .corp-info h4 { font-size: 1.05rem; margin-bottom: .3rem; }
+  .corp-info p { font-size: .9rem; line-height: 1.6; }
+
+  /* ---- 页脚屏 ---- */
+  .home-footer { padding: 2.4rem 0 calc(1.6rem + env(safe-area-inset-bottom)); }
+  .home-footer .footer-cols h6 { font-size: .95rem; margin-bottom: .85rem; }
+  .home-footer .footer-info { font-size: .88rem; }
+}
+
+/* 尊重系统「减少动态效果」偏好：入场动画直接给终态 */
+@media (prefers-reduced-motion: reduce) {
+  .slide-enter, .slide-enter.m-anim { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .nf-progress-bar.run { animation: none !important; width: 100% !important; }
+}
+
+/* ============================================================
+   桌面端兜底：Swiper 万一加载失败 → 首页降级为文档流
+   （由 index.html 脚本在 Swiper 未定义时给 <html> 加 .no-swiper）
+   ============================================================ */
+.no-swiper body.home-v1 { overflow-x: hidden; overflow-y: auto; }
+.no-swiper body.home-v1 #site-topbar,
+.no-swiper body.home-v1 #site-topbar.tb-hide {
+  position: relative; top: auto; max-height: none; opacity: 1; padding: .45rem 0;
+}
+.no-swiper body.home-v1 #site-nav { position: sticky !important; top: 0; }
+.no-swiper .home-swiper { position: static; top: auto; bottom: auto; height: auto; }
+.no-swiper .home-swiper > .swiper-wrapper { display: block; transform: none !important; height: auto; }
+.no-swiper .home-swiper .swiper-slide { display: block; height: auto !important; overflow: visible; }
+.no-swiper .slide-inner { min-height: 0; justify-content: flex-start; }
+.no-swiper .slide-enter { opacity: 1 !important; transform: none !important; }
+.no-swiper .home-swiper .swiper-pagination { display: none; }
+
+/* ============================================================
+   触屏设备（无 hover）：把「悬停才出现」的信息层常驻显示
+   只做弱化、不隐藏 —— 保证手机/平板上仍能看到剂型名称与描述
+   ============================================================ */
+@media (hover: none) {
+  .form-card .form-img-wrap, .form-card .form-ph { filter: none; transform: none; }
+  .form-overlay {
+    opacity: 1;
+    align-items: flex-start;
+    justify-content: flex-end;
+    text-align: left;
+    padding: .7rem;
+    gap: .15rem;
+    background: linear-gradient(to top, rgba(154, 14, 20, .94) 0%, rgba(154, 14, 20, .55) 52%, transparent 100%);
+  }
 }
 </style>
 {% endblock %}
@@ -393,7 +578,8 @@ body.home-v1 #site-nav {
           {% for b in banners %}
           <div class="carousel-item {{ 'active' if loop.first }}">
             <div class="banner-ph {{ b.color }} d-flex align-items-center">
-              <img src="{{ img_url(b.image, 'banner', b.color) }}" alt="{{ b.title | striptags }}">
+              <img src="{{ img_url(b.image, 'banner', b.color) }}" alt="{{ b.title | striptags }}"
+                   fetchpriority="high" decoding="async">
               {% set has_text = b.kicker or b.title or b.subtitle or b.btn_text %}
               {% if has_text %}
               <div class="banner-shade"></div>
@@ -423,7 +609,7 @@ body.home-v1 #site-nav {
                   {% for c in company_images %}
                   <div class="carousel-item {{ 'active' if loop.first }}">
                     <div class="ph {{ c.color }} factory-ph">
-                      <img src="{{ img_url(c.image, 'factory', c.color) }}" alt="{{ c.title }}">
+                      <img src="{{ img_url(c.image, 'factory', c.color) }}" alt="{{ c.title }}" loading="lazy" decoding="async">
                     </div>
                   </div>
                   {% endfor %}
@@ -482,7 +668,8 @@ body.home-v1 #site-nav {
               <a href="/products?form={{ f.name }}" class="form-card">
                 {% if f.image %}
                 <div class="form-img-wrap">
-                  <img src="{{ img_url(f.image, 'form', form_colors[loop.index0 % 8]) }}" alt="{{ f.name }}">
+                  <img src="{{ img_url(f.image, 'form', form_colors[loop.index0 % 8]) }}" alt="{{ f.name }}"
+                       loading="lazy" decoding="async">
                 </div>
                 {% else %}
                 <div class="ph {{ form_colors[loop.index0 % 8] }} form-ph">
@@ -517,7 +704,8 @@ body.home-v1 #site-nav {
               {% for n in latest_news %}
               <a href="/news/{{ n.id }}" class="nf-slide {{ 'on' if loop.first }}">
                 <div class="ph {{ nf_colors[loop.index0 % 5] }} nf-media">
-                  <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-feature', nf_colors[loop.index0 % 5]) }}" alt="{{ n.title }}">
+                  <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-feature', nf_colors[loop.index0 % 5]) }}"
+                         alt="{{ n.title }}" loading="lazy" decoding="async">
                 </div>
                 <div class="nf-overlay">
                   <span class="nf-cat">{{ n.category }}</span>
@@ -563,7 +751,8 @@ body.home-v1 #site-nav {
             <div class="col-sm-6 col-lg-3 slide-enter from-bottom" data-stagger="{{ loop.index0 }}">
               <a href="{{ e.link }}" class="corp-card">
                 {% if e.image %}
-                <div class="corp-img-wrap"><img src="{{ img_url(e.image, 'corp', e.color) }}" alt="{{ e.title }}"></div>
+                <div class="corp-img-wrap"><img src="{{ img_url(e.image, 'corp', e.color) }}" alt="{{ e.title }}"
+                                                loading="lazy" decoding="async"></div>
                 {% else %}
                 <div class="ph {{ e.color }} corp-ph"><span class="ph-tag">{{ e.title }}</span></div>
                 {% endif %}
@@ -631,7 +820,7 @@ body.home-v1 #site-nav {
               </div>
             </div>
             <div class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-              <span>© 2026 {{ COMPANY.full_name }}　桂ICP备00000000号</span>
+              <span>© 2026 {{ COMPANY.full_name }}　<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">桂ICP备14001107号</a></span>
               <span>本站内容仅供参考，药品使用请遵医嘱或按说明书执行</span>
             </div>
           </footer>
@@ -646,15 +835,65 @@ body.home-v1 #site-nav {
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/swiper@11.2.10/swiper-bundle.min.js"></script>
+<script src="{{ url_for('static', filename='vendor/swiper/swiper-bundle.min.js') }}"></script>
+<script>
+/* 桌面端兜底：本地 vendor 的 Swiper 万一没加载成功，就把首页降级为普通文档流，
+   否则 body{overflow:hidden} + .slide-enter{opacity:0} 会让整页空白且无法滚动。 */
+if (typeof Swiper === "undefined") document.documentElement.classList.add("no-swiper");
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   /* ============ 主页 Swiper 全屏幻灯片 ============ */
   // home-v1 / tb-no-anim 已由服务端写在 <body> 上，这里只需确认
   document.body.classList.add("home-v1");
 
+  /* ------------------------------------------------------------------
+     移动端首页：滚动进入的轻量入场动画（渐进增强）
+     ★ 只给「初始在视口之外」的元素加 .m-anim —— 首屏内的内容保持默认可见，
+       这样即使脚本半途失败，也不会有任何内容因此消失。
+     ------------------------------------------------------------------ */
+  function setupMobileHome() {
+    var els = document.querySelectorAll("#homeSwiper .slide-enter");
+    if (!els.length || !("IntersectionObserver" in window)) return;
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("m-in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.08, rootMargin: "0px 0px -6% 0px" });
+
+    Array.prototype.forEach.call(els, function (e, i) {
+      if (e.getBoundingClientRect().top < window.innerHeight * 0.92) return;
+      e.classList.add("m-anim");
+      e.style.transitionDelay = (i % 3) * 0.08 + "s";
+      io.observe(e);
+    });
+  }
+
   var el = document.getElementById("homeSwiper");
-  if (!el || typeof Swiper === "undefined") return;
+  var isDesktop = !window.matchMedia || window.matchMedia("(min-width: 992px)").matches;
+
+  /* ------------------------------------------------------------------
+     ★ 移动端 / 平板（≤991.98px）：首页走「普通文档流」，不初始化 Swiper
+     ------------------------------------------------------------------
+     手机上一屏内容远高于一屏，而 Swiper 会把手指上滑当成翻屏
+     （touchStartPreventDefault 默认开启），屏内永远滚不动；
+     再叠加 .slide-inner 的 flex 居中，超高内容上溢部分彻底不可达。
+     文档流化之后内容 100% 可达，且不再依赖 Swiper 脚本存活。
+     ------------------------------------------------------------------ */
+  if (!isDesktop) {
+    setupMobileHome();
+    return;
+  }
+
+  /* 桌面端兜底：Swiper 未加载成功时把首页降级为文档流（见 extra_css 里的 .no-swiper 规则），
+     否则 body{overflow:hidden} + .slide-enter{opacity:0} 会让整页空白且无法滚动。 */
+  if (!el || typeof Swiper === "undefined") {
+    document.documentElement.classList.add("no-swiper");
+    return;
+  }
 
   // 接管 .stat-num 数字动画：断开 main.js 的 IntersectionObserver（避免与 Swiper 时序冲突）
   if (window.bqCountersObserver) {
