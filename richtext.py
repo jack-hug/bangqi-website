@@ -51,8 +51,14 @@ def _drop_js_attr(match):
 _TAG_RE = re.compile(r"<[a-zA-Z/!][^>]*>")
 # <img ...>（含自闭合写法），用于补加载属性
 _IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.I)
-# 空段落：<p></p> / <p> </p> / <p><br></p> / <p>&nbsp;</p>
-_EMPTY_P_RE = re.compile(r"<p>(?:[ \t\u00a0]|&nbsp;|<br\s*/?>)*</p>", re.I)
+# 段落块：内容里不含嵌套的 <p>，保证从最内层开始判断
+_P_BLOCK_RE = re.compile(r"<p(?:\s[^>]*)?>((?:(?!</?p\b).)*?)</p>", re.I | re.S)
+# 内联标签：判「视觉为空」时先剥掉——Quill 删空文字后常留下空 span/strong
+_INLINE_TAG_RE = re.compile(
+    r"</?(?:span|strong|b|em|i|u|s|sub|sup|a|font|o:p|small|big|mark|"
+    r"label|cite|code|q)\b[^>]*>", re.I)
+# 只含空白 / &nbsp; / <br> 即视为「没有可见内容」
+_WS_ONLY_RE = re.compile(r"^(?:[\s\u00a0]|&nbsp;|<br\s*/?>)*$", re.I)
 # 标签之间仅含换行与缩进的空白（Quill 输出美化时会出现），先折掉再判断空段
 _TAG_GAP_RE = re.compile(r">[ \t]*\n[ \t]*<")
 # 块级收尾标签 → 空格，避免 to_plain 时前后段文字粘在一起
@@ -108,14 +114,32 @@ def ensure_img_attrs(html):
     return _IMG_TAG_RE.sub(_fix, html)
 
 
+def blank_p_to_br(html):
+    """把「视觉为空」的段落归一成 <p><br></p>。
+
+    只认无属性的 <p></p> 是不够的：Quill 在段落带过对齐格式时会写出
+    <p class="ql-align-center"><br></p>，删空文字后还会留下
+    <p><span style="white-space: pre-wrap;"> </span></p>、<p><strong></strong></p>
+    这类「看着是空行、其实有内容」的段落——它们绕过了原来的空段落清理，
+    于是后台每编辑一次就多堆一些空段。
+
+    判定方式：剥掉段内所有内联标签后，若只剩空白 / &nbsp; / <br> 就算空段。
+    空段本身没有可感知的格式，属性（class/style）一并丢弃。
+    """
+    def _fix(m):
+        inner = _INLINE_TAG_RE.sub("", m.group(1))
+        return "<p><br></p>" if _WS_ONLY_RE.match(inner) else m.group(0)
+    return _P_BLOCK_RE.sub(_fix, html)
+
+
 def clean_html(html):
-    """清理：危险标签 → 空段落（<p></p> 去掉、连续压成一个、首尾删除）→ 图片属性"""
+    """清理：危险标签 → 空段落（各种写法统一后去掉冗余）→ 图片属性"""
     s = sanitize_html(html).strip()
     if not s:
         return ""
     s = _TAG_GAP_RE.sub("><", s)
     # 先统一成 <p><br></p> 再折叠，便于识别各种写法
-    s = _EMPTY_P_RE.sub("<p><br></p>", s)
+    s = blank_p_to_br(s)
     s = re.sub(r"(?:<p><br\s*/?></p>)+", "<p><br></p>", s)
     s = re.sub(r"^(?:<p><br\s*/?></p>)+", "", s)
     s = re.sub(r"(?:<p><br\s*/?></p>)+$", "", s)

@@ -958,12 +958,25 @@ function textToRichHtml(text) {
   return out.join("");
 }
 
-// 去掉空段落：<p></p> 一律删掉，连续空段压成一个，首尾空段删除
+// 把「视觉为空」的段落归一成 <p><br></p>
+// （与后端 richtext.py 的 blank_p_to_br 同一套规则：带 class/style 的空段、
+//   只剩空 span/strong 的段落、全角空格段落都算空段——Quill 删空文字后常留下它们）
+function blankPToBr(html) {
+  return String(html || "").replace(
+    /<p(?:\s[^>]*)?>((?:(?!<\/?p\b)[\s\S])*?)<\/p>/gi,
+    function (m, inner) {
+      const stripped = inner.replace(
+        /<\/?(?:span|strong|b|em|i|u|s|sub|sup|a|font|o:p|small|big|mark|label|cite|code|q)\b[^>]*>/gi, "");
+      return /^(?:[\s\u00a0]|&nbsp;|<br\s*\/?>)*$/i.test(stripped) ? "<p><br></p>" : m;
+    });
+}
+
+// 去掉空段落：各种写法统一成 <p><br></p>，连续空段压成一个，首尾空段删除
 function cleanRichHtml(html) {
   let s = String(html || "").trim();
   if (!s) return "";
   s = s.replace(/>[ \t]*\n[ \t]*</g, "><");
-  s = s.replace(/<p>(?:[ \t\u00a0]|&nbsp;|<br\s*\/?>)*<\/p>/gi, "<p><br></p>");
+  s = blankPToBr(s);
   s = s.replace(/(?:<p><br\s*\/?><\/p>)+/gi, "<p><br></p>");
   s = s.replace(/^(?:<p><br\s*\/?><\/p>)+/i, "").replace(/(?:<p><br\s*\/?><\/p>)+$/i, "");
   return s.trim();
