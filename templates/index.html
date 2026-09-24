@@ -6,1442 +6,2374 @@
 {% block body_class %}home-v1 tb-no-anim{% endblock %}
 
 {% block extra_css %}
-<link href="{{ url_for('static', filename='vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
-<style>
-/* ============ 主页专用：topbar 平滑显隐 + swiper 避开导航栏 ============ */
-:root {
-  /* topbar 展开后的高度、导航栏高度 —— 均由 JS 实测后覆盖 */
-  --tb-h: 32px;
-  --nav-h: 76px;
-  /* swiper 顶部偏移 = topbar(若展开) + 导航栏。由 JS 精确同步，
-     单一变量避免多处 calc 不同步产生空白 */
-  --swiper-top: 108px;
-  /* 导航栏顶部位置 = topbar 展开时为其高度，收起时 0 */
-  --nav-top: 32px;
-}
+    <link href="{{ url_for('static', filename='vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
+    <style>
+        /* ============ 主页专用：topbar 平滑显隐 + swiper 避开导航栏 ============ */
+        :root {
+            /* topbar 展开后的高度、导航栏高度 —— 均由 JS 实测后覆盖 */
+            --tb-h: 32px;
+            --nav-h: 76px;
+            /* swiper 顶部偏移 = topbar(若展开) + 导航栏。由 JS 精确同步，
+               单一变量避免多处 calc 不同步产生空白 */
+            --swiper-top: 108px;
+            /* 导航栏顶部位置 = topbar 展开时为其高度，收起时 0 */
+            --nav-top: 32px;
+        }
 
-body.home-v1 { overflow: hidden; background: #fff; }
-body.home-v1 #site-footer { display: none; }
+        body.home-v1 {
+            overflow: hidden;
+            background: #fff;
+        }
 
-/* ---- topbar：固定顶部，max-height + opacity 过渡实现平滑显隐 ----
-   ★ 默认态 = 展开（首屏 banner 就要显示），避免刷新时闪烁
-   收起由 JS 添加 .tb-hide 触发 */
-body.home-v1 #site-topbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 70;
-  overflow: hidden;
-  max-height: var(--tb-h);
-  opacity: 1;
-  padding-top: .45rem;
-  padding-bottom: .45rem;
-  transition: max-height .45s cubic-bezier(.4,0,.2,1),
-              opacity .32s ease,
-              padding .45s cubic-bezier(.4,0,.2,1);
-  will-change: max-height, opacity;
-}
-/* 收起态 */
-body.home-v1 #site-topbar.tb-hide {
-  max-height: 0;
-  opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-/* ★ 刷新首帧禁用过渡：JS 会在首屏渲染完成后移除这个类 */
-body.home-v1.tb-no-anim #site-topbar,
-body.home-v1.tb-no-anim #site-nav,
-body.home-v1.tb-no-anim .home-swiper {
-  transition: none !important;
-}
+        body.home-v1 #site-footer {
+            display: none;
+        }
 
-/* ---- 导航栏：固定顶部，top 跟随 topbar 展开/收起 ----
-   注意：base.html 上有 Bootstrap 的 .sticky-top（position:sticky!important），
-   这里必须用 !important 覆盖为 fixed */
-body.home-v1 #site-nav {
-  background: rgba(255,255,255,.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0,0,0,.06);
-  position: fixed !important;
-  top: var(--nav-top);
-  left: 0; right: 0;
-  z-index: 65;
-  transition: top .45s cubic-bezier(.4,0,.2,1),
-              background .35s ease;
-}
+        /* ---- topbar：固定顶部，max-height + opacity 过渡实现平滑显隐 ----
+           ★ 默认态 = 展开（首屏 banner 就要显示），避免刷新时闪烁
+           收起由 JS 添加 .tb-hide 触发 */
+        body.home-v1 #site-topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 70;
+            overflow: hidden;
+            max-height: var(--tb-h);
+            opacity: 1;
+            padding-top: .45rem;
+            padding-bottom: .45rem;
+            transition: max-height .45s cubic-bezier(.4, 0, .2, 1),
+            opacity .32s ease,
+            padding .45s cubic-bezier(.4, 0, .2, 1);
+            will-change: max-height, opacity;
+        }
 
-/* ============ Swiper 全屏容器（顶部精确让开 topbar + 导航栏） ============ */
-.home-swiper {
-  position: fixed;
-  top: var(--swiper-top);
-  left: 0; right: 0; bottom: 0;
-  width: 100%;
-  height: auto;
-  z-index: 1;
-  background: var(--bq-bg);
-  transition: top .45s cubic-bezier(.4,0,.2,1);
-}
-.home-swiper .swiper-slide {
-  height: 100%;
-  overflow-y: auto; overflow-x: hidden;
-  display: flex; flex-direction: column;
-  position: relative;
-  -webkit-overflow-scrolling: touch;
-}
-.slide-inner {
-  flex: 1;
-  display: flex; flex-direction: column;
-  justify-content: center;
-  padding: 2.5rem 0 3rem;
-  min-height: 100%;
-}
-.slide-tint { background: var(--bq-red-soft); }
-.slide-footer { background: linear-gradient(180deg, #1a1f2e, #0f131d); color: rgba(255,255,255,.85); }
+        /* 收起态 */
+        body.home-v1 #site-topbar.tb-hide {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
 
-/* ============ 自定义分页圆点（右侧垂直） ============ */
-.home-swiper .swiper-pagination {
-  right: 1.4rem !important; left: auto !important;
-  top: 50% !important; bottom: auto !important;
-  transform: translateY(-50%) !important;
-  width: auto !important;
-  display: flex; flex-direction: column; gap: 1rem;
-  z-index: 20;
-}
-/* 视觉仍是 12×12 圆点，触控热区扩到 44×44：
-   用透明 border 撑开热区、负 margin 抵消占位（视觉间距不变），
-   圆点本体交给 ::after 绘制 */
-.home-swiper .swiper-pagination-bullet {
-  width: 12px; height: 12px;
-  box-sizing: content-box;
-  border: 16px solid transparent;
-  margin: -16px 0 !important;
-  background: transparent;
-  opacity: 1;
-  position: relative;
-  cursor: pointer;
-}
-.home-swiper .swiper-pagination-bullet::after {
-  content: ""; position: absolute; inset: 0;
-  border-radius: 50%;
-  background: rgba(255,255,255,.7);
-  border: 2px solid var(--bq-red);
-  opacity: .55;
-  box-shadow: 0 2px 6px rgba(0,0,0,.18);
-  transition: opacity .3s, background .3s, transform .3s cubic-bezier(.2,.8,.3,1);
-}
-.home-swiper .swiper-pagination-bullet-active::after {
-  background: var(--bq-red);
-  opacity: 1;
-  transform: scale(1.35);
-}
+        /* ★ 刷新首帧禁用过渡：JS 会在首屏渲染完成后移除这个类 */
+        body.home-v1.tb-no-anim #site-topbar,
+        body.home-v1.tb-no-anim #site-nav,
+        body.home-v1.tb-no-anim .home-swiper {
+            transition: none !important;
+        }
 
-/* ============ 动画初始态：所有 slide-enter 默认隐藏 ============ */
-/* 注意：动画由 JS 的 Web Animations API 驱动（保证每次进入都重播），
-   这里的 transform 只作为「未播放时」的初始静止态 */
-.slide-enter {
-  opacity: 0;
-  transition: opacity .85s cubic-bezier(.2,.8,.3,1),
-              transform .85s cubic-bezier(.2,.8,.3,1);
-  will-change: opacity, transform;
-}
-.slide-enter.from-left  { transform: translateX(-110%); }
-.slide-enter.from-right { transform: translateX(110%); }
-.slide-enter.from-bottom{ transform: translateY(100%); }
-.slide-enter.from-fade  { transform: translateY(40px); }
-/* .active 仅在无 WAAPI 支持的降级路径下使用 */
-.slide-enter.active {
-  opacity: 1 !important;
-  transform: translateX(0) translateY(0) !important;
-}
-.slide-title-stay {
-  /* 标题不参与动画（文档要求：标题保持不动） */
-  opacity: 1 !important;
-  transform: none !important;
-}
+        /* ---- 导航栏：固定顶部，top 跟随 topbar 展开/收起 ----
+           注意：base.html 上有 Bootstrap 的 .sticky-top（position:sticky!important），
+           这里必须用 !important 覆盖为 fixed */
+        body.home-v1 #site-nav {
+            background: rgba(255, 255, 255, .55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 0, 0, .06);
+            position: fixed !important;
+            top: var(--nav-top);
+            left: 0;
+            right: 0;
+            z-index: 65;
+            transition: top .45s cubic-bezier(.4, 0, .2, 1),
+            background .35s ease;
+        }
 
-/* ============ Banner 屏适配（slide 1） ============ */
-.home-slide-banner .carousel,
-.home-slide-banner .carousel-inner,
-.home-slide-banner .carousel-item,
-.home-slide-banner .banner-ph {
-  height: 100%;
-  min-height: 480px;
-}
-.banner-ph { position: relative; overflow: hidden; }
+        /* ============ Swiper 全屏容器（顶部精确让开 topbar + 导航栏） ============ */
+        .home-swiper {
+            position: fixed;
+            top: var(--swiper-top);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: auto;
+            z-index: 1;
+            background: var(--bq-bg);
+            transition: top .45s cubic-bezier(.4, 0, .2, 1);
+        }
 
-/* ------------------------------------------------------------------
-   Banner 图层：图片 + 遮罩各自独立成层。
-   图片层不再做任何缩放动画（方案已弃用图片缩放），只保留静态铺满，
-   object-fit: cover 保证任何比例下都填满容器、不露边缘。
-   ------------------------------------------------------------------ */
-.banner-ph > img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  /* 保留 1.02 的极轻微余量，避免亚像素取整时边缘出现 1px 缝隙 */
-  transform: scale(1.02);
-  transform-origin: center center;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.banner-shade {
-  position: absolute; inset: 0;
-  z-index: 1;
-  background: linear-gradient(90deg, rgba(60,12,14,.78) 0%, rgba(60,12,14,.40) 55%, rgba(60,12,14,.55) 100%);
-}
-.banner-caption { position: relative; z-index: 2; color: #fff; max-width: 760px; padding: 0 1rem; }
-.banner-kicker { display: inline-block; font-size: .95rem; letter-spacing: .32em; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: .45rem 1.4rem; margin-bottom: 1.6rem; }
-.banner-caption h2 { font-size: clamp(2.4rem, 5.6vw, 4.2rem); font-weight: 900; line-height: 1.22; margin-bottom: 1.4rem; }
-.banner-caption p { color: rgba(255,255,255,.82); font-size: 1.18rem; margin-bottom: 2.2rem; }
-.banner-caption .btn { display: inline-block; padding: .85rem 2rem; background: var(--bq-red); color: #fff; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 1.02rem; transition: background .2s, transform .2s; }
-.banner-caption .btn:hover { background: var(--bq-red-2); transform: translateY(-2px); }
-/* banner 下方的长条分页器已按要求移除 */
-#homeBanner .carousel-indicators { display: none !important; }
-/* ------------------------------------------------------------------
-   切换过渡：推移 + 视差（图片缩放已弃用，只保留位移）
-   新图从右往左推入并淡入，旧图反向向右慢移 4% 并淡出，形成视差纵深。
-   由 JS 用 WAAPI 驱动，关闭 Bootstrap 自带的 opacity 过渡以免互相打架。
-   ------------------------------------------------------------------ */
-.home-slide-banner .carousel-fade .carousel-item {
-  transition: none;
-}
-/* 旧图在下层、新图在上层，形成层叠推入的纵深感 */
-.home-slide-banner .carousel-item.bq-leaving {
-  z-index: 1;
-}
-.home-slide-banner .carousel-item.bq-entering {
-  z-index: 2;
-}
+        .home-swiper .swiper-slide {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
 
-/* ============ 公司简介（slide 2） ============ */
-.intro-text { color: #4a5852; line-height: 2.05; font-size: 1.05rem; text-align: justify; }
-.factory-ph { height: 460px; position: relative; }
-.factory-ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.factory-indicators { margin-bottom: .8rem; gap: .35rem; }
-/* 视觉仍是 28×4 细条，热区加高到 44px（条仍纵向居中，肉眼无差别） */
-.factory-indicators [data-bs-target] {
-  width: 28px; height: 44px; margin: 0 4px;
-  background: transparent; border: none; border-radius: 0;
-  box-sizing: border-box; text-indent: -999px; opacity: 1;
-  position: relative;
-}
-.factory-indicators [data-bs-target]::after {
-  content: ""; position: absolute; left: 0; right: 0; top: 20px;
-  height: 4px; border-radius: 2px; background: rgba(255,255,255,.5);
-  transition: background .2s;
-}
-.factory-indicators .active::after { background: var(--bq-gold); }
-.shadow-bq { box-shadow: var(--bq-shadow-lg); }
-.sec-kicker.not-center::before { display: none; }
+        .slide-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 2.5rem 0 3rem;
+            min-height: 100%;
+        }
 
-/* ---- 三圆环 ---- */
-.stat-row { display: flex; justify-content: center; align-items: flex-start; gap: 2.8rem; margin-top: 2.6rem; flex-wrap: wrap; width: 100%; }
-.stat-row-center { text-align: center; }
-.stat-circle { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.05rem; }
-.stat-card {
-  position: relative; width: 168px; height: 168px;
-  background: #fff; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 10px 26px rgba(230, 33, 41, .10);
-  transition: transform .35s cubic-bezier(.2,.8,.3,1), box-shadow .35s;
-}
-.stat-circle:hover .stat-card { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(230, 33, 41, .22); }
-.stat-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.stat-ring-bg, .stat-ring-fg { fill: none; stroke-width: 5; stroke-linecap: round; }
-.stat-ring-bg { stroke: rgba(230, 33, 41, .10); }
-.stat-ring-fg { stroke: var(--bq-red); stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset .15s linear; }
-.stat-circle:hover .stat-ring-fg { stroke: var(--bq-red-2); }
-.stat-num-wrap { position: relative; z-index: 2; padding: 0 6px; display: flex; align-items: baseline; justify-content: center; gap: 3px; font-family: var(--bq-font-serif); }
-.stat-num { font-size: 2.5rem; font-weight: 900; color: var(--bq-red); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
-.stat-unit { font-size: .92rem; color: var(--bq-red-2); font-weight: 700; }
-.stat-label { font-size: 1.02rem; font-weight: 600; color: var(--bq-ink); letter-spacing: .04em; }
-@media (max-width: 575.98px) { .stat-card { width: 120px; height: 120px; } .stat-num { font-size: 1.75rem; } .stat-unit { font-size: .72rem; } }
+        .slide-tint {
+            background: var(--bq-red-soft);
+        }
 
-/* ============ 八大剂型（slide 3） ============ */
-/* 4 列 × 2 行必须在 slide 可用高度内完整显示。
-   JS 会计算 --form-card-h（每张卡片的最大高度），卡片按 3/4 比例
-   反推宽度并居中，任何屏幕高度下两行都完整可见 */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(.6rem, 1.2vh, 1.1rem);
-  justify-items: center;
-  align-items: center;
-}
-.form-col { display: flex; justify-content: center; align-items: center; width: 100%; }
-.form-card {
-  display: block; position: relative; border-radius: var(--bq-radius);
-  overflow: hidden; box-shadow: var(--bq-shadow);
-  aspect-ratio: 3 / 4;
-  /* 高度优先取 --form-card-h（由 JS 按可用高度算出），同时不超过列宽 */
-  height: var(--form-card-h, 260px);
-  max-width: 100%;
-  /* 宽度由 aspect-ratio + height 自然推出 */
-  width: auto;
-}
-.form-img-wrap, .form-ph { position: absolute; inset: 0; transition: filter .35s, transform .35s; }
-.form-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; background: transparent; }
-.form-card:hover .form-img-wrap, .form-card:hover .form-ph { filter: blur(5px) opacity(.45); transform: scale(1.05); }
-.form-overlay {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: .45rem;
-  background: linear-gradient(160deg, rgba(154,14,20,.88), rgba(154,14,20,.72));
-  color: #fff; opacity: 0; transition: opacity .35s; backdrop-filter: blur(2px);
-  padding: .9rem; text-align: center;
-}
-.form-card:hover .form-overlay { opacity: 1; }
-.form-name { font-family: var(--bq-font-serif); font-size: clamp(1.1rem, 1.6vw, 1.5rem); font-weight: 900; }
-.form-desc { font-size: clamp(.72rem, .86vw, .86rem); color: rgba(255,255,255,.85); letter-spacing: .06em; }
-.form-go { margin-top: .35rem; font-size: clamp(.7rem, .82vw, .84rem); border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: .26rem .95rem; }
-@media (max-width: 991.98px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 575.98px) { .form-grid { grid-template-columns: repeat(1, 1fr); } }
+        .slide-footer {
+            background: linear-gradient(180deg, #1a1f2e, #0f131d);
+            color: rgba(255, 255, 255, .85);
+        }
 
-/* ============ 邦琪资讯（slide 4） ============ */
-.news-grid { display: grid; grid-template-columns: 1.36fr 1fr; gap: 1.8rem; align-items: stretch; }
-.news-feature { position: relative; border-radius: var(--bq-radius); overflow: hidden; box-shadow: var(--bq-shadow-lg); min-height: 560px; background: #0f2a22; }
-.nf-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .65s ease; pointer-events: none; }
-.nf-slide.on { opacity: 1; pointer-events: auto; }
-.nf-media { position: absolute; inset: 0; }
-.nf-media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.nf-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 3.4rem 2.4rem 2.4rem; background: linear-gradient(to top, rgba(60,12,14,.95) 8%, rgba(60,12,14,.6) 52%, transparent); color: #fff; }
-.nf-cat { display: inline-block; font-size: .82rem; font-weight: 700; color: #fff; background: var(--bq-gold); border-radius: 999px; padding: .26rem .95rem; letter-spacing: .08em; }
-.nf-title { font-family: var(--bq-font-serif); font-size: clamp(1.45rem, 2.5vw, 1.95rem); font-weight: 900; line-height: 1.45; margin: .85rem 0 .65rem; }
-.nf-excerpt { font-size: .98rem; color: rgba(255,255,255,.82); line-height: 1.75; margin: 0 0 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.nf-meta { font-size: .85rem; color: rgba(255,255,255,.7); display: flex; justify-content: space-between; align-items: center; }
-.nf-meta em { font-style: normal; color: #e6c47c; font-weight: 600; }
-.nf-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.16); z-index: 5; }
-.nf-progress-bar { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--bq-gold), #e6c47c); }
-.nf-progress-bar.run { animation: nfbar 5.2s linear forwards; }
-@keyframes nfbar { from { width: 0; } to { width: 100%; } }
+        /* ============ 自定义分页圆点（右侧垂直） ============ */
+        .home-swiper .swiper-pagination {
+            right: 1.4rem !important;
+            left: auto !important;
+            top: 50% !important;
+            bottom: auto !important;
+            transform: translateY(-50%) !important;
+            width: auto !important;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 20;
+        }
 
-.news-side { display: flex; flex-direction: column; border: 1px solid var(--bq-line); border-radius: var(--bq-radius); background: #fff; overflow: hidden; box-shadow: var(--bq-shadow); }
-.ns-head { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.6rem; background: linear-gradient(135deg, var(--bq-red), var(--bq-red-2)); color: #fff; font-weight: 700; letter-spacing: .08em; font-size: 1.02rem; }
-.ns-more { color: rgba(255,255,255,.85); font-size: .88rem; font-weight: 400; }
-.ns-more:hover { color: #e6c47c; }
-.ns-item { flex: 1; display: flex; gap: 1.05rem; align-items: center; padding: 1.05rem 1.6rem; border-bottom: 1px solid var(--bq-line); border-left: 3px solid transparent; transition: background .25s, border-color .25s; min-height: 96px; }
-.ns-item:last-child { border-bottom: none; }
-.ns-num { font-size: 1.85rem; font-weight: 900; color: #cdd8d2; line-height: 1; font-variant-numeric: tabular-nums; transition: color .25s; flex: none; }
-.ns-item.on .ns-num { color: var(--bq-gold); }
-.ns-item.on { background: var(--bq-red-soft); border-left-color: var(--bq-gold); }
-.ns-item:hover { background: var(--bq-red-soft); }
-.ns-body { min-width: 0; flex: 1; }
-.ns-title { display: block; font-size: 1.02rem; font-weight: 600; color: var(--bq-ink); line-height: 1.55; margin-bottom: .35rem; transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ns-item.on .ns-title { color: var(--bq-red); }
-.ns-meta { font-size: .82rem; color: var(--bq-gray); }
-@media (max-width: 991.98px) { .news-grid { grid-template-columns: 1fr; } .news-feature { min-height: 420px; } }
+        /* 视觉仍是 12×12 圆点，触控热区扩到 44×44：
+           用透明 border 撑开热区、负 margin 抵消占位（视觉间距不变），
+           圆点本体交给 ::after 绘制 */
+        .home-swiper .swiper-pagination-bullet {
+            width: 12px;
+            height: 12px;
+            box-sizing: content-box;
+            border: 16px solid transparent;
+            margin: -16px 0 !important;
+            background: transparent;
+            opacity: 1;
+            position: relative;
+            cursor: pointer;
+        }
 
-/* ============ 走近邦琪（slide 5） ============ */
-.corp-card {
-  display: block; border-radius: var(--bq-radius); overflow: hidden;
-  background: #fff; box-shadow: var(--bq-shadow);
-  transition: transform .35s, box-shadow .35s;
-}
-.corp-card:hover { transform: translateY(-8px); box-shadow: var(--bq-shadow-lg); }
-.corp-ph, .corp-img-wrap { position: relative; height: auto; }
-.corp-img-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
-.corp-img-wrap, .corp-ph { aspect-ratio: 37 / 65; }
-.corp-info { padding: 1.4rem 1.6rem 1.6rem; }
-.corp-info h4 { font-family: var(--bq-font-serif); font-size: 1.32rem; font-weight: 700; color: var(--bq-red); margin-bottom: .5rem; }
-.corp-info p { font-size: .95rem; color: var(--bq-gray); margin: 0; line-height: 1.65; }
+        .home-swiper .swiper-pagination-bullet::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .7);
+            border: 2px solid var(--bq-red);
+            opacity: .55;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+            transition: opacity .3s, background .3s, transform .3s cubic-bezier(.2, .8, .3, 1);
+        }
 
-/* ============ Footer（slide 6） ============ */
-.home-footer {
-  width: 100%;
-  padding: 3.6rem 0 2rem;
-}
-.home-footer .footer-cols h6 {
-  color: #fff; font-size: 1.02rem; font-weight: 700;
-  letter-spacing: .12em; margin-bottom: 1.15rem;
-  position: relative; padding-bottom: .7rem;
-}
-.home-footer .footer-cols h6::after {
-  content: ""; position: absolute; left: 0; bottom: 0;
-  width: 28px; height: 2px; background: var(--bq-red);
-}
-.home-footer .footer-links { list-style: none; padding: 0; margin: 0; }
-.home-footer .footer-links li { margin-bottom: .55rem; }
-.home-footer .footer-links a { color: rgba(255,255,255,.7); text-decoration: none; font-size: .95rem; transition: color .2s; }
-.home-footer .footer-links a:hover { color: var(--bq-red); }
-.home-footer .footer-info { color: rgba(255,255,255,.75); font-size: .95rem; }
-.home-footer .qr-block {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 70px; height: 70px; background: rgba(255,255,255,.08);
-  border-radius: 8px; color: rgba(255,255,255,.6);
-}
-.home-footer .qr-tip { font-size: .92rem; color: rgba(255,255,255,.7); margin-left: .9rem; }
-.home-footer .qr-tip small { display: block; font-size: .8rem; color: rgba(255,255,255,.5); margin-top: .2rem; }
-.home-footer .footer-bottom {
-  margin-top: 2.8rem; padding-top: 1.6rem;
-  border-top: 1px solid rgba(255,255,255,.1);
-  color: rgba(255,255,255,.55); font-size: .85rem;
-}
+        .home-swiper .swiper-pagination-bullet-active::after {
+            background: var(--bq-red);
+            opacity: 1;
+            transform: scale(1.35);
+        }
 
-/* ============ 通用 section heading ============ */
-.sec-head { text-align: center; margin-bottom: 3rem; }
-.sec-kicker { font-size: .92rem; letter-spacing: .32em; color: var(--bq-red); font-weight: 700; position: relative; display: inline-block; padding-bottom: .75rem; margin-bottom: 1.1rem; }
-.sec-kicker::before { content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 36px; height: 2px; background: var(--bq-gold); }
-.sec-title { font-family: var(--bq-font-serif); font-size: clamp(2.2rem, 3.8vw, 3rem); font-weight: 900; color: var(--bq-ink); margin-bottom: .85rem; }
-.sec-sub { color: var(--bq-gray); font-size: 1.05rem; }
-.sec-title.text-start { text-align: left; }
-.sec-kicker.not-center { padding-bottom: .75rem; }
+        /* ============ 动画初始态：所有 slide-enter 默认隐藏 ============ */
+        /* 注意：动画由 JS 的 Web Animations API 驱动（保证每次进入都重播），
+           这里的 transform 只作为「未播放时」的初始静止态 */
+        .slide-enter {
+            opacity: 0;
+            transition: opacity .85s cubic-bezier(.2, .8, .3, 1),
+            transform .85s cubic-bezier(.2, .8, .3, 1);
+            will-change: opacity, transform;
+        }
 
-/* 移动端适配 */
-@media (max-width: 767.98px) {
-  .slide-inner { padding: 4.5rem 0 2rem; }
-  .home-swiper .swiper-pagination { right: .7rem !important; gap: .7rem; }
-  .home-swiper .swiper-pagination-bullet { width: 10px; height: 10px; }
-  .form-card { aspect-ratio: 1 / 1; }
-  .nf-excerpt { -webkit-line-clamp: 1; }
-  .ns-item { padding: .7rem 1rem; gap: .65rem; min-height: 64px; }
-  .ns-num { font-size: 1.2rem; }
-  .news-feature { min-height: 280px; }
-}
+        .slide-enter.from-left {
+            transform: translateX(-110%);
+        }
 
-/* ============================================================
-   ★ 移动端 / 平板（≤991.98px）：首页改为「普通文档流」
-   ------------------------------------------------------------
-   背景（2026-09-23 真触摸实测）：
-   手机屏幕上每屏内容 878~2269px，容器只有 769px，但手指上滑时
-   slide.scrollTop 恒为 0、activeIndex 却递增 —— 手势被 Swiper 当成翻屏，
-   屏内一次都没滚动过；叠加 .slide-inner 的 justify-content:center，
-   超高内容「上下同时溢出」，上溢部分永久不可达
-   （「八大剂型」标题实测 top=-556px，整个标题+前 3 张卡都看不到）。
-   处理：本断点下不初始化 Swiper，整页按文档流自上而下滚动，
-   内容 100% 可达、手势零冲突；Swiper 脚本挂掉也不影响。
-   桌面端（≥992px）完全不变。
-   ============================================================ */
-@media (max-width: 991.98px) {
-  /* 页面恢复可滚动 */
-  body.home-v1 { overflow-x: hidden; overflow-y: auto; }
+        .slide-enter.from-right {
+            transform: translateX(110%);
+        }
 
-  /* topbar 回归文档流并常显；导航改为 sticky 吸顶（不再脱离文档流遮挡内容） */
-  body.home-v1 #site-topbar,
-  body.home-v1 #site-topbar.tb-hide {
-    position: relative;
-    top: auto; left: auto; right: auto;
-    max-height: none;
-    opacity: 1;
-    padding-top: .45rem;
-    padding-bottom: .45rem;
-    transition: none;
-  }
-  body.home-v1 #site-nav {
-    position: sticky !important;
-    top: 0;
-    background: rgba(255, 255, 255, .94);
-    transition: none;
-  }
+        .slide-enter.from-bottom {
+            transform: translateY(100%);
+        }
 
-  /* 容器与每一屏按内容高度自然撑开 */
-  .home-swiper,
-  body.home-v1.tb-no-anim .home-swiper {
-    position: static;
-    top: auto; bottom: auto;
-    height: auto;
-    transition: none;
-  }
-  .home-swiper > .swiper-wrapper {
-    display: block;
-    transform: none !important;
-    height: auto;
-  }
-  .home-swiper .swiper-slide {
-    display: block;
-    height: auto !important;
-    width: 100%;              /* 兜底：即使 Swiper 的 CSS 未加载，宽度也由自己保证 */
-    overflow: visible;
-  }
-  .home-swiper .swiper-slide + .swiper-slide { border-top: 1px solid var(--bq-line); }
-  .slide-inner {
-    min-height: 0;
-    /* ★ 关键：不能再用 flex 居中 —— 内容超高时会上下同时溢出，上溢部分找不回来 */
-    justify-content: flex-start;
-    padding: 2.8rem 0 3rem;
-  }
-  .home-swiper .swiper-pagination { display: none; }
+        .slide-enter.from-fade {
+            transform: translateY(40px);
+        }
 
-  /* 入场：默认直接可见（脚本失效也不影响）；.m-anim 由脚本加，做滚动入场动画 */
-  .slide-enter { opacity: 1; transform: none; }
-  .slide-enter.m-anim {
-    opacity: 0; transform: translateY(26px);
-    transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.3,1);
-  }
-  .slide-enter.m-anim.m-in { opacity: 1; transform: none; }
+        /* .active 仅在无 WAAPI 支持的降级路径下使用 */
+        .slide-enter.active {
+            opacity: 1 !important;
+            transform: translateX(0) translateY(0) !important;
+        }
 
-  /* ---- Banner 屏：容器比例对齐后台出图规范 1920×1080（16:9）----
-     原来是「固定铺满视口高度」，手机上 1920×750 的图只可见 21%；
-     按 16:9 定高后图片零裁切完整显示，文案字号同步收紧以保证放得下。 */
-  .home-slide-banner .carousel,
-  .home-slide-banner .carousel-inner,
-  .home-slide-banner .carousel-item { height: auto; min-height: 0; }
-  .home-slide-banner .banner-ph { aspect-ratio: 16 / 9; height: auto; min-height: 0; }
-  /* 16:9 容器 + 16:9 出图 = 零裁切，不需要为亚像素缝隙留 1.02 的余量 */
-  .home-slide-banner .banner-ph > img { transform: none; }
-  .banner-caption { padding: 0 .9rem; }
-  .banner-kicker { font-size: .66rem; letter-spacing: .2em; padding: .22rem .8rem; margin-bottom: .6rem; }
-  .banner-caption h2 { font-size: clamp(1.15rem, 5.4vw, 1.7rem); line-height: 1.3; margin-bottom: .45rem; }
-  .banner-caption p { font-size: .82rem; margin-bottom: .6rem; }
-  .banner-caption .btn { padding: .42rem 1.15rem; font-size: .8rem; }
+        .slide-title-stay {
+            /* 标题不参与动画（文档要求：标题保持不动） */
+            opacity: 1 !important;
+            transform: none !important;
+        }
 
-  /* ---- 公司简介屏 ---- */
-  .factory-ph { height: auto; aspect-ratio: 4 / 3; }   /* 出图规范 960×720 = 4:3 → 零裁切 */
-  .intro-text { font-size: .95rem; line-height: 1.9; }
-  .stat-row { gap: 1.3rem; margin-top: 1.8rem; }
-  .stat-label { font-size: .9rem; }
+        /* ============ Banner 屏适配（slide 1） ============ */
+        .home-slide-banner .carousel,
+        .home-slide-banner .carousel-inner,
+        .home-slide-banner .carousel-item,
+        .home-slide-banner .banner-ph {
+            height: 100%;
+            min-height: 480px;
+        }
 
-  /* ---- 八大剂型屏：2 列自适应，高度由宽度决定（不再让 JS 按「2 行」算固定高度，
-         手机实际 4 行，算出来只会把总高翻倍） ---- */
-  .form-grid { grid-template-columns: repeat(2, 1fr); gap: .8rem; }
-  .form-card { height: auto; width: 100%; aspect-ratio: 1 / 1; }
-  .form-name { font-size: 1rem; }
-  .form-desc { font-size: .7rem; }
-  .form-go { font-size: .68rem; padding: .22rem .7rem; }
+        .banner-ph {
+            position: relative;
+            overflow: hidden;
+        }
 
-  /* ---- 邦琪资讯屏 ---- */
-  .news-feature { min-height: 300px; }
-  .ns-title { font-size: 1rem; }
-  .ns-meta { font-size: .9rem; }
-  .nf-overlay { padding: 1.6rem 1.1rem 1.1rem; }
-  .nf-title { font-size: 1.2rem; }
-  .nf-excerpt { font-size: .86rem; }
-  .ns-item { min-height: 0; }
+        /* ------------------------------------------------------------------
+           Banner 图层：图片 + 遮罩各自独立成层。
+           图片层不再做任何缩放动画（方案已弃用图片缩放），只保留静态铺满，
+           object-fit: cover 保证任何比例下都填满容器、不露边缘。
+           ------------------------------------------------------------------ */
+        .banner-ph > img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 保留 1.02 的极轻微余量，避免亚像素取整时边缘出现 1px 缝隙 */
+            transform: scale(1.02);
+            transform-origin: center center;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
 
-  /* ---- 走近邦琪屏：37:65 竖版海报在手机上单张近 650px，改为左图右文横向卡片 ---- */
-  .corp-card { display: flex; align-items: stretch; }
-  .corp-img-wrap, .corp-ph { aspect-ratio: 1 / 1; width: 116px; flex: none; }
-  .corp-info { padding: .85rem 1rem; }
-  .corp-info h4 { font-size: 1.05rem; margin-bottom: .3rem; }
-  .corp-info p { font-size: .9rem; line-height: 1.6; }
+        .banner-shade {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: linear-gradient(90deg, rgba(60, 12, 14, .78) 0%, rgba(60, 12, 14, .40) 55%, rgba(60, 12, 14, .55) 100%);
+        }
 
-  /* ---- 页脚屏 ---- */
-  .home-footer { padding: 2.4rem 0 calc(1.6rem + env(safe-area-inset-bottom)); }
-  .home-footer .footer-cols h6 { font-size: .95rem; margin-bottom: .85rem; }
-  .home-footer .footer-info { font-size: .88rem; }
-}
+        .banner-caption {
+            position: relative;
+            z-index: 2;
+            color: #fff;
+            max-width: 760px;
+            padding: 0 1rem;
+        }
 
-/* 尊重系统「减少动态效果」偏好：入场动画直接给终态 */
-@media (prefers-reduced-motion: reduce) {
-  .slide-enter, .slide-enter.m-anim { opacity: 1 !important; transform: none !important; transition: none !important; }
-  .nf-progress-bar.run { animation: none !important; width: 100% !important; }
-}
+        .banner-kicker {
+            display: inline-block;
+            font-size: .95rem;
+            letter-spacing: .32em;
+            border: 1px solid rgba(255, 255, 255, .5);
+            border-radius: 999px;
+            padding: .45rem 1.4rem;
+            margin-bottom: 1.6rem;
+        }
 
-/* ============================================================
-   桌面端兜底：Swiper 万一加载失败 → 首页降级为文档流
-   （由 index.html 脚本在 Swiper 未定义时给 <html> 加 .no-swiper）
-   ============================================================ */
-.no-swiper body.home-v1 { overflow-x: hidden; overflow-y: auto; }
-.no-swiper body.home-v1 #site-topbar,
-.no-swiper body.home-v1 #site-topbar.tb-hide {
-  position: relative; top: auto; max-height: none; opacity: 1; padding: .45rem 0;
-}
-.no-swiper body.home-v1 #site-nav { position: sticky !important; top: 0; }
-.no-swiper .home-swiper { position: static; top: auto; bottom: auto; height: auto; }
-.no-swiper .home-swiper > .swiper-wrapper { display: block; transform: none !important; height: auto; }
-.no-swiper .home-swiper .swiper-slide { display: block; height: auto !important; overflow: visible; }
-.no-swiper .slide-inner { min-height: 0; justify-content: flex-start; }
-.no-swiper .slide-enter { opacity: 1 !important; transform: none !important; }
-.no-swiper .home-swiper .swiper-pagination { display: none; }
+        .banner-caption h2 {
+            font-size: clamp(2.4rem, 5.6vw, 4.2rem);
+            font-weight: 900;
+            line-height: 1.22;
+            margin-bottom: 1.4rem;
+        }
 
-/* ============================================================
-   触屏设备（无 hover）：把「悬停才出现」的信息层常驻显示
-   只做弱化、不隐藏 —— 保证手机/平板上仍能看到剂型名称与描述
-   ============================================================ */
-@media (hover: none) {
-  .form-card .form-img-wrap, .form-card .form-ph { filter: none; transform: none; }
-  .form-overlay {
-    opacity: 1;
-    align-items: flex-start;
-    justify-content: flex-end;
-    text-align: left;
-    padding: .7rem;
-    gap: .15rem;
-    background: linear-gradient(to top, rgba(154, 14, 20, .94) 0%, rgba(154, 14, 20, .55) 52%, transparent 100%);
-  }
-}
-</style>
+        .banner-caption p {
+            color: rgba(255, 255, 255, .82);
+            font-size: 1.18rem;
+            margin-bottom: 2.2rem;
+        }
+
+        .banner-caption .btn {
+            display: inline-block;
+            padding: .85rem 2rem;
+            background: var(--bq-red);
+            color: #fff;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.02rem;
+            transition: background .2s, transform .2s;
+        }
+
+        .banner-caption .btn:hover {
+            background: var(--bq-red-2);
+            transform: translateY(-2px);
+        }
+
+        /* banner 下方的长条分页器已按要求移除 */
+        #homeBanner .carousel-indicators {
+            display: none !important;
+        }
+
+        /* ------------------------------------------------------------------
+           切换过渡：推移 + 视差（图片缩放已弃用，只保留位移）
+           新图从右往左推入并淡入，旧图反向向右慢移 4% 并淡出，形成视差纵深。
+           由 JS 用 WAAPI 驱动，关闭 Bootstrap 自带的 opacity 过渡以免互相打架。
+           ------------------------------------------------------------------ */
+        .home-slide-banner .carousel-fade .carousel-item {
+            transition: none;
+        }
+
+        /* 旧图在下层、新图在上层，形成层叠推入的纵深感 */
+        .home-slide-banner .carousel-item.bq-leaving {
+            z-index: 1;
+        }
+
+        .home-slide-banner .carousel-item.bq-entering {
+            z-index: 2;
+        }
+
+        /* ============ 公司简介（slide 2） ============ */
+        .intro-text {
+            color: #4a5852;
+            line-height: 2.05;
+            font-size: 1.05rem;
+            text-align: justify;
+        }
+
+        .factory-ph {
+            height: 460px;
+            position: relative;
+        }
+
+        .factory-ph > img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .factory-indicators {
+            margin-bottom: .8rem;
+            gap: .35rem;
+        }
+
+        /* 视觉仍是 28×4 细条，热区加高到 44px（条仍纵向居中，肉眼无差别） */
+        .factory-indicators [data-bs-target] {
+            width: 28px;
+            height: 44px;
+            margin: 0 4px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            box-sizing: border-box;
+            text-indent: -999px;
+            opacity: 1;
+            position: relative;
+        }
+
+        .factory-indicators [data-bs-target]::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 20px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, .5);
+            transition: background .2s;
+        }
+
+        .factory-indicators .active::after {
+            background: var(--bq-gold);
+        }
+
+        .shadow-bq {
+            box-shadow: var(--bq-shadow-lg);
+        }
+
+        .sec-kicker.not-center::before {
+            display: none;
+        }
+
+        /* ---- 三圆环 ---- */
+        .stat-row {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 2.8rem;
+            margin-top: 2.6rem;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .stat-row-center {
+            text-align: center;
+        }
+
+        .stat-circle {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.05rem;
+        }
+
+        .stat-card {
+            position: relative;
+            width: 168px;
+            height: 168px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 26px rgba(230, 33, 41, .10);
+            transition: transform .35s cubic-bezier(.2, .8, .3, 1), box-shadow .35s;
+        }
+
+        .stat-circle:hover .stat-card {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 36px rgba(230, 33, 41, .22);
+        }
+
+        .stat-ring {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .stat-ring-bg, .stat-ring-fg {
+            fill: none;
+            stroke-width: 5;
+            stroke-linecap: round;
+        }
+
+        .stat-ring-bg {
+            stroke: rgba(230, 33, 41, .10);
+        }
+
+        .stat-ring-fg {
+            stroke: var(--bq-red);
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            transition: stroke-dashoffset .15s linear;
+        }
+
+        .stat-circle:hover .stat-ring-fg {
+            stroke: var(--bq-red-2);
+        }
+
+        .stat-num-wrap {
+            position: relative;
+            z-index: 2;
+            padding: 0 6px;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 3px;
+            font-family: var(--bq-font-serif);
+        }
+
+        .stat-num {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--bq-red);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -.01em;
+            white-space: nowrap;
+        }
+
+        .stat-unit {
+            font-size: .92rem;
+            color: var(--bq-red-2);
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 1.02rem;
+            font-weight: 600;
+            color: var(--bq-ink);
+            letter-spacing: .04em;
+        }
+
+        @media (max-width: 575.98px) {
+            .stat-card {
+                width: 120px;
+                height: 120px;
+            }
+
+            .stat-num {
+                font-size: 1.75rem;
+            }
+
+            .stat-unit {
+                font-size: .72rem;
+            }
+        }
+
+        /* ============ 八大剂型（slide 3） ============ */
+        /* 4 列 × 2 行必须在 slide 可用高度内完整显示。
+           JS 会计算 --form-card-h（每张卡片的最大高度），卡片按 3/4 比例
+           反推宽度并居中，任何屏幕高度下两行都完整可见 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: clamp(.6rem, 1.2vh, 1.1rem);
+            justify-items: center;
+            align-items: center;
+        }
+
+        .form-col {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .form-card {
+            display: block;
+            position: relative;
+            border-radius: var(--bq-radius);
+            overflow: hidden;
+            box-shadow: var(--bq-shadow);
+            aspect-ratio: 3 / 4;
+            /* 高度优先取 --form-card-h（由 JS 按可用高度算出），同时不超过列宽 */
+            height: var(--form-card-h, 260px);
+            max-width: 100%;
+            /* 宽度由 aspect-ratio + height 自然推出 */
+            width: auto;
+        }
+
+        .form-img-wrap, .form-ph {
+            position: absolute;
+            inset: 0;
+            transition: filter .35s, transform .35s;
+        }
+
+        .form-img-wrap img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 2;
+            background: transparent;
+        }
+
+        .form-card:hover .form-img-wrap, .form-card:hover .form-ph {
+            filter: blur(5px) opacity(.45);
+            transform: scale(1.05);
+        }
+
+        .form-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            background: linear-gradient(160deg, rgba(154, 14, 20, .88), rgba(154, 14, 20, .72));
+            color: #fff;
+            opacity: 0;
+            transition: opacity .35s;
+            backdrop-filter: blur(2px);
+            padding: .9rem;
+            text-align: center;
+        }
+
+        .form-card:hover .form-overlay {
+            opacity: 1;
+        }
+
+        .form-name {
+            font-family: var(--bq-font-serif);
+            font-size: clamp(1.1rem, 1.6vw, 1.5rem);
+            font-weight: 900;
+        }
+
+        .form-desc {
+            font-size: clamp(.72rem, .86vw, .86rem);
+            color: rgba(255, 255, 255, .85);
+            letter-spacing: .06em;
+        }
+
+        .form-go {
+            margin-top: .35rem;
+            font-size: clamp(.7rem, .82vw, .84rem);
+            border: 1px solid rgba(255, 255, 255, .6);
+            border-radius: 999px;
+            padding: .26rem .95rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .form-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+
+        /* ============ 邦琪资讯（slide 4） ============ */
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1.36fr 1fr;
+            gap: 1.8rem;
+            align-items: stretch;
+        }
+
+        .news-feature {
+            position: relative;
+            border-radius: var(--bq-radius);
+            overflow: hidden;
+            box-shadow: var(--bq-shadow-lg);
+            min-height: 560px;
+            background: #0f2a22;
+        }
+
+        .nf-slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity .65s ease;
+            pointer-events: none;
+        }
+
+        .nf-slide.on {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .nf-media {
+            position: absolute;
+            inset: 0;
+        }
+
+        .nf-media > img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .nf-overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 3.4rem 2.4rem 2.4rem;
+            background: linear-gradient(to top, rgba(60, 12, 14, .95) 8%, rgba(60, 12, 14, .6) 52%, transparent);
+            color: #fff;
+        }
+
+        .nf-cat {
+            display: inline-block;
+            font-size: .82rem;
+            font-weight: 700;
+            color: #fff;
+            background: var(--bq-gold);
+            border-radius: 999px;
+            padding: .26rem .95rem;
+            letter-spacing: .08em;
+        }
+
+        .nf-title {
+            font-family: var(--bq-font-serif);
+            font-size: clamp(1.45rem, 2.5vw, 1.95rem);
+            font-weight: 900;
+            line-height: 1.45;
+            margin: .85rem 0 .65rem;
+        }
+
+        .nf-excerpt {
+            font-size: .98rem;
+            color: rgba(255, 255, 255, .82);
+            line-height: 1.75;
+            margin: 0 0 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .nf-meta {
+            font-size: .85rem;
+            color: rgba(255, 255, 255, .7);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nf-meta em {
+            font-style: normal;
+            color: #e6c47c;
+            font-weight: 600;
+        }
+
+        .nf-progress {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, .16);
+            z-index: 5;
+        }
+
+        .nf-progress-bar {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--bq-gold), #e6c47c);
+        }
+
+        .nf-progress-bar.run {
+            animation: nfbar 5.2s linear forwards;
+        }
+
+        @keyframes nfbar {
+            from {
+                width: 0;
+            }
+            to {
+                width: 100%;
+            }
+        }
+
+        .news-side {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--bq-line);
+            border-radius: var(--bq-radius);
+            background: #fff;
+            overflow: hidden;
+            box-shadow: var(--bq-shadow);
+        }
+
+        .ns-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 1.6rem;
+            background: linear-gradient(135deg, var(--bq-red), var(--bq-red-2));
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: .08em;
+            font-size: 1.02rem;
+        }
+
+        .ns-more {
+            color: rgba(255, 255, 255, .85);
+            font-size: .88rem;
+            font-weight: 400;
+        }
+
+        .ns-more:hover {
+            color: #e6c47c;
+        }
+
+        .ns-item {
+            flex: 1;
+            display: flex;
+            gap: 1.05rem;
+            align-items: center;
+            padding: 1.05rem 1.6rem;
+            border-bottom: 1px solid var(--bq-line);
+            border-left: 3px solid transparent;
+            transition: background .25s, border-color .25s;
+            min-height: 96px;
+        }
+
+        .ns-item:last-child {
+            border-bottom: none;
+        }
+
+        .ns-num {
+            font-size: 1.85rem;
+            font-weight: 900;
+            color: #cdd8d2;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            transition: color .25s;
+            flex: none;
+        }
+
+        .ns-item.on .ns-num {
+            color: var(--bq-gold);
+        }
+
+        .ns-item.on {
+            background: var(--bq-red-soft);
+            border-left-color: var(--bq-gold);
+        }
+
+        .ns-item:hover {
+            background: var(--bq-red-soft);
+        }
+
+        .ns-body {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .ns-title {
+            display: block;
+            font-size: 1.02rem;
+            font-weight: 600;
+            color: var(--bq-ink);
+            line-height: 1.55;
+            margin-bottom: .35rem;
+            transition: color .2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ns-item.on .ns-title {
+            color: var(--bq-red);
+        }
+
+        .ns-meta {
+            font-size: .82rem;
+            color: var(--bq-gray);
+        }
+
+        @media (max-width: 991.98px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .news-feature {
+                min-height: 420px;
+            }
+        }
+
+        /* ============ 走近邦琪（slide 5） ============ */
+        .corp-card {
+            display: block;
+            border-radius: var(--bq-radius);
+            overflow: hidden;
+            background: #fff;
+            box-shadow: var(--bq-shadow);
+            transition: transform .35s, box-shadow .35s;
+        }
+
+        .corp-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--bq-shadow-lg);
+        }
+
+        .corp-ph, .corp-img-wrap {
+            position: relative;
+            height: auto;
+        }
+
+        .corp-img-wrap img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 2;
+        }
+
+        .corp-img-wrap, .corp-ph {
+            aspect-ratio: 37 / 65;
+        }
+
+        .corp-info {
+            padding: 1.4rem 1.6rem 1.6rem;
+        }
+
+        .corp-info h4 {
+            font-family: var(--bq-font-serif);
+            font-size: 1.32rem;
+            font-weight: 700;
+            color: var(--bq-red);
+            margin-bottom: .5rem;
+        }
+
+        .corp-info p {
+            font-size: .95rem;
+            color: var(--bq-gray);
+            margin: 0;
+            line-height: 1.65;
+        }
+
+        /* ============ Footer（slide 6） ============ */
+        .home-footer {
+            width: 100%;
+            padding: 3.6rem 0 2rem;
+        }
+
+        .home-footer .footer-cols h6 {
+            color: #fff;
+            font-size: 1.02rem;
+            font-weight: 700;
+            letter-spacing: .12em;
+            margin-bottom: 1.15rem;
+            position: relative;
+            padding-bottom: .7rem;
+        }
+
+        .home-footer .footer-cols h6::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 28px;
+            height: 2px;
+            background: var(--bq-red);
+        }
+
+        .home-footer .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .home-footer .footer-links li {
+            margin-bottom: .55rem;
+        }
+
+        .home-footer .footer-links a {
+            color: rgba(255, 255, 255, .7);
+            text-decoration: none;
+            font-size: .95rem;
+            transition: color .2s;
+        }
+
+        .home-footer .footer-links a:hover {
+            color: var(--bq-red);
+        }
+
+        .home-footer .footer-info {
+            color: rgba(255, 255, 255, .75);
+            font-size: .95rem;
+        }
+
+        .home-footer .qr-block {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, .08);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, .6);
+        }
+
+        .home-footer .qr-tip {
+            font-size: .92rem;
+            color: rgba(255, 255, 255, .7);
+            margin-left: .9rem;
+        }
+
+        .home-footer .qr-tip small {
+            display: block;
+            font-size: .8rem;
+            color: rgba(255, 255, 255, .5);
+            margin-top: .2rem;
+        }
+
+        .home-footer .footer-bottom {
+            margin-top: 2.8rem;
+            padding-top: 1.6rem;
+            border-top: 1px solid rgba(255, 255, 255, .1);
+            color: rgba(255, 255, 255, .55);
+            font-size: .85rem;
+        }
+
+        /* ============ 通用 section heading ============ */
+        .sec-head {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .sec-kicker {
+            font-size: .92rem;
+            letter-spacing: .32em;
+            color: var(--bq-red);
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            padding-bottom: .75rem;
+            margin-bottom: 1.1rem;
+        }
+
+        .sec-kicker::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 36px;
+            height: 2px;
+            background: var(--bq-gold);
+        }
+
+        .sec-title {
+            font-family: var(--bq-font-serif);
+            font-size: clamp(2.2rem, 3.8vw, 3rem);
+            font-weight: 900;
+            color: var(--bq-ink);
+            margin-bottom: .85rem;
+        }
+
+        .sec-sub {
+            color: var(--bq-gray);
+            font-size: 1.05rem;
+        }
+
+        .sec-title.text-start {
+            text-align: left;
+        }
+
+        .sec-kicker.not-center {
+            padding-bottom: .75rem;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 767.98px) {
+            .slide-inner {
+                padding: 4.5rem 0 2rem;
+            }
+
+            .home-swiper .swiper-pagination {
+                right: .7rem !important;
+                gap: .7rem;
+            }
+
+            .home-swiper .swiper-pagination-bullet {
+                width: 10px;
+                height: 10px;
+            }
+
+            .form-card {
+                aspect-ratio: 1 / 1;
+            }
+
+            .nf-excerpt {
+                -webkit-line-clamp: 1;
+            }
+
+            .ns-item {
+                padding: .7rem 1rem;
+                gap: .65rem;
+                min-height: 64px;
+            }
+
+            .ns-num {
+                font-size: 1.2rem;
+            }
+
+            .news-feature {
+                min-height: 280px;
+            }
+        }
+
+        /* ============================================================
+           ★ 移动端 / 平板（≤991.98px）：首页改为「普通文档流」
+           ------------------------------------------------------------
+           背景（2026-09-23 真触摸实测）：
+           手机屏幕上每屏内容 878~2269px，容器只有 769px，但手指上滑时
+           slide.scrollTop 恒为 0、activeIndex 却递增 —— 手势被 Swiper 当成翻屏，
+           屏内一次都没滚动过；叠加 .slide-inner 的 justify-content:center，
+           超高内容「上下同时溢出」，上溢部分永久不可达
+           （「八大剂型」标题实测 top=-556px，整个标题+前 3 张卡都看不到）。
+           处理：本断点下不初始化 Swiper，整页按文档流自上而下滚动，
+           内容 100% 可达、手势零冲突；Swiper 脚本挂掉也不影响。
+           桌面端（≥992px）完全不变。
+           ============================================================ */
+        @media (max-width: 991.98px) {
+            /* 页面恢复可滚动 */
+            body.home-v1 {
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            /* topbar 回归文档流并常显；导航改为 sticky 吸顶（不再脱离文档流遮挡内容） */
+            body.home-v1 #site-topbar,
+            body.home-v1 #site-topbar.tb-hide {
+                position: relative;
+                top: auto;
+                left: auto;
+                right: auto;
+                max-height: none;
+                opacity: 1;
+                padding-top: .45rem;
+                padding-bottom: .45rem;
+                transition: none;
+            }
+
+            body.home-v1 #site-nav {
+                position: sticky !important;
+                top: 0;
+                background: rgba(255, 255, 255, .94);
+                transition: none;
+            }
+
+            /* 容器与每一屏按内容高度自然撑开 */
+            .home-swiper,
+            body.home-v1.tb-no-anim .home-swiper {
+                position: static;
+                top: auto;
+                bottom: auto;
+                height: auto;
+                transition: none;
+            }
+
+            .home-swiper > .swiper-wrapper {
+                display: block;
+                transform: none !important;
+                height: auto;
+            }
+
+            .home-swiper .swiper-slide {
+                display: block;
+                height: auto !important;
+                width: 100%; /* 兜底：即使 Swiper 的 CSS 未加载，宽度也由自己保证 */
+                overflow: visible;
+            }
+
+            .home-swiper .swiper-slide + .swiper-slide {
+                border-top: 1px solid var(--bq-line);
+            }
+
+            .slide-inner {
+                min-height: 0;
+                /* ★ 关键：不能再用 flex 居中 —— 内容超高时会上下同时溢出，上溢部分找不回来 */
+                justify-content: flex-start;
+                padding: 2.8rem 0 3rem;
+            }
+
+            .home-swiper .swiper-pagination {
+                display: none;
+            }
+
+            /* 入场：默认直接可见（脚本失效也不影响）；.m-anim 由脚本加，做滚动入场动画 */
+            .slide-enter {
+                opacity: 1;
+                transform: none;
+            }
+
+            .slide-enter.m-anim {
+                opacity: 0;
+                transform: translateY(26px);
+                transition: opacity .7s ease, transform .7s cubic-bezier(.2, .8, .3, 1);
+            }
+
+            .slide-enter.m-anim.m-in {
+                opacity: 1;
+                transform: none;
+            }
+
+            /* ---- Banner 屏：容器比例对齐后台出图规范 1920×1080（16:9）----
+               原来是「固定铺满视口高度」，手机上 1920×750 的图只可见 21%；
+               按 16:9 定高后图片零裁切完整显示，文案字号同步收紧以保证放得下。 */
+            .home-slide-banner .carousel,
+            .home-slide-banner .carousel-inner,
+            .home-slide-banner .carousel-item {
+                height: auto;
+                min-height: 0;
+            }
+
+            .home-slide-banner .banner-ph {
+                aspect-ratio: 16 / 9;
+                height: auto;
+                min-height: 0;
+            }
+
+            /* 16:9 容器 + 16:9 出图 = 零裁切，不需要为亚像素缝隙留 1.02 的余量 */
+            .home-slide-banner .banner-ph > img {
+                transform: none;
+            }
+
+            .banner-caption {
+                padding: 0 .9rem;
+            }
+
+            .banner-kicker {
+                font-size: .66rem;
+                letter-spacing: .2em;
+                padding: .22rem .8rem;
+                margin-bottom: .6rem;
+            }
+
+            .banner-caption h2 {
+                font-size: clamp(1.15rem, 5.4vw, 1.7rem);
+                line-height: 1.3;
+                margin-bottom: .45rem;
+            }
+
+            .banner-caption p {
+                font-size: .82rem;
+                margin-bottom: .6rem;
+            }
+
+            .banner-caption .btn {
+                padding: .42rem 1.15rem;
+                font-size: .8rem;
+            }
+
+            /* ---- 公司简介屏 ---- */
+            .factory-ph {
+                height: auto;
+                aspect-ratio: 4 / 3;
+            }
+
+            /* 出图规范 960×720 = 4:3 → 零裁切 */
+            .intro-text {
+                font-size: .95rem;
+                line-height: 1.9;
+            }
+
+            .stat-row {
+                gap: 1.3rem;
+                margin-top: 1.8rem;
+            }
+
+            .stat-label {
+                font-size: .9rem;
+            }
+
+            /* ---- 八大剂型屏：2 列自适应，高度由宽度决定（不再让 JS 按「2 行」算固定高度，
+                   手机实际 4 行，算出来只会把总高翻倍） ---- */
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: .8rem;
+            }
+
+            .form-card {
+                height: auto;
+                width: 100%;
+                aspect-ratio: 1 / 1;
+            }
+
+            .form-name {
+                font-size: 1rem;
+            }
+
+            .form-desc {
+                font-size: .7rem;
+            }
+
+            .form-go {
+                font-size: .68rem;
+                padding: .22rem .7rem;
+            }
+
+            /* ---- 邦琪资讯屏 ---- */
+            .news-feature {
+                min-height: 300px;
+            }
+
+            .ns-title {
+                font-size: 1rem;
+            }
+
+            .ns-meta {
+                font-size: .9rem;
+            }
+
+            .nf-overlay {
+                padding: 1.6rem 1.1rem 1.1rem;
+            }
+
+            .nf-title {
+                font-size: 1.2rem;
+            }
+
+            .nf-excerpt {
+                font-size: .86rem;
+            }
+
+            .ns-item {
+                min-height: 0;
+            }
+
+            /* ---- 走近邦琪屏：37:65 竖版海报在手机上单张近 650px，改为左图右文横向卡片 ---- */
+            .corp-card {
+                display: flex;
+                align-items: stretch;
+            }
+
+            .corp-img-wrap, .corp-ph {
+                aspect-ratio: 1 / 1;
+                width: 116px;
+                flex: none;
+            }
+
+            .corp-info {
+                padding: .85rem 1rem;
+            }
+
+            .corp-info h4 {
+                font-size: 1.05rem;
+                margin-bottom: .3rem;
+            }
+
+            .corp-info p {
+                font-size: .9rem;
+                line-height: 1.6;
+            }
+
+            /* ---- 页脚屏 ---- */
+            .home-footer {
+                padding: 2.4rem 0 calc(1.6rem + env(safe-area-inset-bottom));
+            }
+
+            .home-footer .footer-cols h6 {
+                font-size: .95rem;
+                margin-bottom: .85rem;
+            }
+
+            .home-footer .footer-info {
+                font-size: .88rem;
+            }
+        }
+
+        /* 尊重系统「减少动态效果」偏好：入场动画直接给终态 */
+        @media (prefers-reduced-motion: reduce) {
+            .slide-enter, .slide-enter.m-anim {
+                opacity: 1 !important;
+                transform: none !important;
+                transition: none !important;
+            }
+
+            .nf-progress-bar.run {
+                animation: none !important;
+                width: 100% !important;
+            }
+        }
+
+        /* ============================================================
+           桌面端兜底：Swiper 万一加载失败 → 首页降级为文档流
+           （由 index.html 脚本在 Swiper 未定义时给 <html> 加 .no-swiper）
+           ============================================================ */
+        .no-swiper body.home-v1 {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .no-swiper body.home-v1 #site-topbar,
+        .no-swiper body.home-v1 #site-topbar.tb-hide {
+            position: relative;
+            top: auto;
+            max-height: none;
+            opacity: 1;
+            padding: .45rem 0;
+        }
+
+        .no-swiper body.home-v1 #site-nav {
+            position: sticky !important;
+            top: 0;
+        }
+
+        .no-swiper .home-swiper {
+            position: static;
+            top: auto;
+            bottom: auto;
+            height: auto;
+        }
+
+        .no-swiper .home-swiper > .swiper-wrapper {
+            display: block;
+            transform: none !important;
+            height: auto;
+        }
+
+        .no-swiper .home-swiper .swiper-slide {
+            display: block;
+            height: auto !important;
+            overflow: visible;
+        }
+
+        .no-swiper .slide-inner {
+            min-height: 0;
+            justify-content: flex-start;
+        }
+
+        .no-swiper .slide-enter {
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
+        .no-swiper .home-swiper .swiper-pagination {
+            display: none;
+        }
+
+        /* ============================================================
+           触屏设备（无 hover）：把「悬停才出现」的信息层常驻显示
+           只做弱化、不隐藏 —— 保证手机/平板上仍能看到剂型名称与描述
+           ============================================================ */
+        @media (hover: none) {
+            .form-card .form-img-wrap, .form-card .form-ph {
+                filter: none;
+                transform: none;
+            }
+
+            .form-overlay {
+                opacity: 1;
+                align-items: flex-start;
+                justify-content: flex-end;
+                text-align: left;
+                padding: .7rem;
+                gap: .15rem;
+                background: linear-gradient(to top, rgba(154, 14, 20, .94) 0%, rgba(154, 14, 20, .55) 52%, transparent 100%);
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<!-- ============ Swiper 11 全屏 6 屏幻灯片 ============ -->
-<div class="swiper home-swiper" id="homeSwiper">
-  <div class="swiper-wrapper">
+    <!-- ============ Swiper 11 全屏 6 屏幻灯片 ============ -->
+    <div class="swiper home-swiper" id="homeSwiper">
+        <div class="swiper-wrapper">
 
-    <!-- ===== Slide 1: Banner（内部 carousel 4 秒自动切换，循环） =====
-         ★ data-bs-pause="false" 是必需的：
-         Bootstrap 5 Carousel 的 pause 默认值是 "hover"，即鼠标移入就 pause()、
-         移出才 cycle()。所以「悬停在图片上时停止自动切换」是 Bootstrap 的默认行为，
-         必须显式关掉。 -->
-    <section class="swiper-slide home-slide-banner" data-slide="banner">
-      <div id="homeBanner" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000" data-bs-pause="false">
-        <!-- 长条分页器已按要求移除 -->
-        <div class="carousel-inner">
-          {% for b in banners %}
-          <div class="carousel-item {{ 'active' if loop.first }}">
-            <div class="banner-ph {{ b.color }} d-flex align-items-center">
-              <img src="{{ img_url(b.image, 'banner', b.color) }}" alt="{{ b.title | striptags }}"
-                   fetchpriority="high" decoding="async">
-              {% set has_text = b.kicker or b.title or b.subtitle or b.btn_text %}
-              {% if has_text %}
-              <div class="banner-shade"></div>
-              <div class="container banner-caption">
-                {% if b.kicker %}<span class="banner-kicker">{{ b.kicker }}</span>{% endif %}
-                {% if b.title %}<h2>{{ b.title | safe }}</h2>{% endif %}
-                {% if b.subtitle %}<p>{{ b.subtitle }}</p>{% endif %}
-                {% if b.btn_text %}<a href="{{ b.btn_link }}" class="btn">{{ b.btn_text }}</a>{% endif %}
-              </div>
-              {% endif %}
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        <!-- 文档要求：取消左右按钮，改为自动循环 -->
-      </div>
-    </section>
-
-    <!-- ===== Slide 2: 公司简介（左图左滑入、右文右滑入、3 圆环延迟登场） ===== -->
-    <section class="swiper-slide" data-slide="about">
-      <div class="slide-inner">
-        <div class="container">
-          <div class="row g-5 align-items-center">
-            <div class="col-lg-6 slide-enter from-left" data-stagger="0">
-              <div id="factoryShots" class="carousel slide carousel-fade factory-carousel" data-bs-ride="carousel" data-bs-interval="4000">
-                <div class="carousel-inner rounded-4 overflow-hidden shadow-bq">
-                  {% for c in company_images %}
-                  <div class="carousel-item {{ 'active' if loop.first }}">
-                    <div class="ph {{ c.color }} factory-ph">
-                      <img src="{{ img_url(c.image, 'factory', c.color) }}" alt="{{ c.title }}" loading="lazy" decoding="async">
+            <!-- ===== Slide 1: Banner（内部 carousel 4 秒自动切换，循环） =====
+                 ★ data-bs-pause="false" 是必需的：
+                 Bootstrap 5 Carousel 的 pause 默认值是 "hover"，即鼠标移入就 pause()、
+                 移出才 cycle()。所以「悬停在图片上时停止自动切换」是 Bootstrap 的默认行为，
+                 必须显式关掉。 -->
+            <section class="swiper-slide home-slide-banner" data-slide="banner">
+                <div id="homeBanner" class="carousel slide carousel-fade" data-bs-ride="carousel"
+                     data-bs-interval="4000" data-bs-pause="false">
+                    <!-- 长条分页器已按要求移除 -->
+                    <div class="carousel-inner">
+                        {% for b in banners %}
+                            <div class="carousel-item {{ 'active' if loop.first }}">
+                                <div class="banner-ph {{ b.color }} d-flex align-items-center">
+                                    <img src="{{ img_url(b.image, 'banner', b.color) }}" alt="{{ b.title | striptags }}"
+                                         fetchpriority="high" decoding="async">
+                                    {% set has_text = b.kicker or b.title or b.subtitle or b.btn_text %}
+                                    {% if has_text %}
+                                        <div class="banner-shade"></div>
+                                        <div class="container banner-caption">
+                                            {% if b.kicker %}
+                                                <span class="banner-kicker">{{ b.kicker }}</span>{% endif %}
+                                            {% if b.title %}<h2>{{ b.title | safe }}</h2>{% endif %}
+                                            {% if b.subtitle %}<p>{{ b.subtitle }}</p>{% endif %}
+                                            {% if b.btn_text %}
+                                                <a href="{{ b.btn_link }}" class="btn">{{ b.btn_text }}</a>{% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
-                  </div>
-                  {% endfor %}
+                    <!-- 文档要求：取消左右按钮，改为自动循环 -->
                 </div>
-                <div class="carousel-indicators factory-indicators">
-                  {% for c in company_images %}
-                  <button type="button" data-bs-target="#factoryShots" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first }}"></button>
-                  {% endfor %}
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-6">
-              <div class="slide-enter from-right" data-stagger="0">
-                <div class="sec-kicker not-center">ABOUT US</div>
-                <h2 class="sec-title text-start">三十余载·只为放心好药</h2>
-                <p class="intro-text">{{ COMPANY.intro }}</p>
-              </div>
-              <div class="slide-enter from-bottom" data-stagger="1" id="aboutStats">
-                <div class="stat-row stat-row-center">
-                  {% for s in home_stats %}
-                  <div class="stat-circle">
-                    <div class="stat-card">
-                      <svg class="stat-ring" viewBox="0 0 100 100" aria-hidden="true">
-                        <circle class="stat-ring-bg" cx="50" cy="50" r="42"/>
-                        <circle class="stat-ring-fg" cx="50" cy="50" r="42" pathLength="100"/>
-                      </svg>
-                      <div class="stat-num-wrap">
-                        <span class="stat-num" data-target="{{ s.value }}">0</span>
-                        <span class="stat-unit">{{ s.unit }}</span>
-                      </div>
+            </section>
+
+            <!-- ===== Slide 2: 公司简介（左图左滑入、右文右滑入、3 圆环延迟登场） ===== -->
+            <section class="swiper-slide" data-slide="about">
+                <div class="slide-inner">
+                    <div class="container">
+                        <div class="row g-5 align-items-center">
+                            <div class="col-lg-6 slide-enter from-left" data-stagger="0">
+                                <div id="factoryShots" class="carousel slide carousel-fade factory-carousel"
+                                     data-bs-ride="carousel" data-bs-interval="4000">
+                                    <div class="carousel-inner rounded-4 overflow-hidden shadow-bq">
+                                        {% for c in company_images %}
+                                            <div class="carousel-item {{ 'active' if loop.first }}">
+                                                <div class="ph {{ c.color }} factory-ph">
+                                                    <img src="{{ img_url(c.image, 'factory', c.color) }}"
+                                                         alt="{{ c.title }}" loading="lazy" decoding="async">
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="carousel-indicators factory-indicators">
+                                        {% for c in company_images %}
+                                            <button type="button" data-bs-target="#factoryShots"
+                                                    data-bs-slide-to="{{ loop.index0 }}"
+                                                    class="{{ 'active' if loop.first }}"></button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="slide-enter from-right" data-stagger="0">
+                                    <div class="sec-kicker not-center">ABOUT US</div>
+                                    <h2 class="sec-title text-start">三十余载·只为放心好药</h2>
+                                    <p class="intro-text">{{ COMPANY.intro }}</p>
+                                </div>
+                                <div class="slide-enter from-bottom" data-stagger="1" id="aboutStats">
+                                    <div class="stat-row stat-row-center">
+                                        {% for s in home_stats %}
+                                            <div class="stat-circle">
+                                                <div class="stat-card">
+                                                    <svg class="stat-ring" viewBox="0 0 100 100" aria-hidden="true">
+                                                        <circle class="stat-ring-bg" cx="50" cy="50" r="42"/>
+                                                        <circle class="stat-ring-fg" cx="50" cy="50" r="42"
+                                                                pathLength="100"/>
+                                                    </svg>
+                                                    <div class="stat-num-wrap">
+                                                        <span class="stat-num" data-target="{{ s.value }}">0</span>
+                                                        <span class="stat-unit">{{ s.unit }}</span>
+                                                    </div>
+                                                </div>
+                                                <span class="stat-label">{{ s.label }}</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <span class="stat-label">{{ s.label }}</span>
-                  </div>
-                  {% endfor %}
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+            </section>
 
-    <!-- ===== Slide 3: 八大剂型（标题不动，其余从下往上弹出） ===== -->
-    <section class="swiper-slide" data-slide="products">
-      <div class="slide-inner">
-        <div class="container">
-          <div class="sec-head slide-title-stay">
-            <div class="sec-kicker">PRODUCTS</div>
-            <h2 class="sec-title">八大剂型 · 全谱系中药制造</h2>
-            <p class="sec-sub">精选八大核心剂型，覆盖滋补膏方与常用中成药</p>
-          </div>
-          <div class="form-grid">
-            {% set form_colors = ["ph-am","ph-gy","ph-gr","ph-ta","ph-cp","ph-li","ph-ti","ph-pi"] %}
-            {% for f in dosage_form_cards %}
-            <div class="form-col slide-enter from-bottom" data-stagger="{{ loop.index0 }}">
-              <a href="/products?form={{ f.name }}" class="form-card">
-                {% if f.image %}
-                <div class="form-img-wrap">
-                  <img src="{{ img_url(f.image, 'form', form_colors[loop.index0 % 8]) }}" alt="{{ f.name }}"
-                       loading="lazy" decoding="async">
+            <!-- ===== Slide 3: 八大剂型（标题不动，其余从下往上弹出） ===== -->
+            <section class="swiper-slide" data-slide="products">
+                <div class="slide-inner">
+                    <div class="container">
+                        <div class="sec-head slide-title-stay">
+                            <div class="sec-kicker">PRODUCTS</div>
+                            <h2 class="sec-title">八大剂型 · 全谱系中药制造</h2>
+                            <p class="sec-sub">精选八大核心剂型，覆盖滋补膏方与常用中成药</p>
+                        </div>
+                        <div class="form-grid">
+                            {% set form_colors = ["ph-am","ph-gy","ph-gr","ph-ta","ph-cp","ph-li","ph-ti","ph-pi"] %}
+                            {% for f in dosage_form_cards %}
+                                <div class="form-col slide-enter from-bottom" data-stagger="{{ loop.index0 }}">
+                                    <a href="/products?form={{ f.name }}" class="form-card">
+                                        {% if f.image %}
+                                            <div class="form-img-wrap">
+                                                <img src="{{ img_url(f.image, 'form', form_colors[loop.index0 % 8]) }}"
+                                                     alt="{{ f.name }}"
+                                                     loading="lazy" decoding="async">
+                                            </div>
+                                        {% else %}
+                                            <div class="ph {{ form_colors[loop.index0 % 8] }} form-ph">
+                                                <span class="ph-tag">{{ f.name }} · 待上传</span>
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-overlay">
+                                            <span class="form-name">{{ f.name }}</span>
+                                            <span class="form-desc">{{ f.description }}</span>
+                                            <span class="form-go">进入剂型 →</span>
+                                        </div>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
-                {% else %}
-                <div class="ph {{ form_colors[loop.index0 % 8] }} form-ph">
-                  <span class="ph-tag">{{ f.name }} · 待上传</span>
-                </div>
-                {% endif %}
-                <div class="form-overlay">
-                  <span class="form-name">{{ f.name }}</span>
-                  <span class="form-desc">{{ f.description }}</span>
-                  <span class="form-go">进入剂型 →</span>
-                </div>
-              </a>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-    </section>
+            </section>
 
-    <!-- ===== Slide 4: 邦琪资讯（标题不动，其余从下往上弹出） ===== -->
-    <section class="swiper-slide" data-slide="news">
-      <div class="slide-inner">
-        <div class="container">
-          <div class="sec-head slide-title-stay">
-            <div class="sec-kicker">NEWS</div>
-            <h2 class="sec-title">邦琪资讯</h2>
-            <p class="sec-sub">聚焦企业发展动态与行业前沿资讯</p>
-          </div>
-          <div class="news-grid slide-enter from-bottom" data-stagger="0" id="newsArea">
-            <div class="news-feature">
-              {% set nf_colors = ["ph-green", "ph-ta", "ph-am", "ph-ti", "ph-li"] %}
-              {% for n in latest_news %}
-              <a href="/news/{{ n.id }}" class="nf-slide {{ 'on' if loop.first }}">
-                <div class="ph {{ nf_colors[loop.index0 % 5] }} nf-media">
-                  <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-feature', nf_colors[loop.index0 % 5]) }}"
-                         alt="{{ n.title }}" loading="lazy" decoding="async">
-                </div>
-                <div class="nf-overlay">
-                  <span class="nf-cat">{{ n.category }}</span>
-                  <h3 class="nf-title">{{ n.title }}</h3>
-                  <p class="nf-excerpt">{{ n.content | plaintext | truncate(60) }}</p>
-                  <span class="nf-meta"><span>{{ n.date }} 发布</span><em>阅读全文 →</em></span>
-                </div>
-              </a>
-              {% endfor %}
-              <div class="nf-progress"><span class="nf-progress-bar"></span></div>
-            </div>
-            <div class="news-side">
-              <div class="ns-head">
-                <span class="serif">要闻速览 · TOP 5</span>
-                <a href="/news" class="ns-more">全部资讯 →</a>
-              </div>
-              {% for n in latest_news %}
-              <a href="/news/{{ n.id }}" class="ns-item {{ 'on' if loop.first }}" data-idx="{{ loop.index0 }}">
-                <span class="ns-num serif">{{ "%02d" % loop.index }}</span>
-                <span class="ns-body">
+            <!-- ===== Slide 4: 邦琪资讯（标题不动，其余从下往上弹出） ===== -->
+            <section class="swiper-slide" data-slide="news">
+                <div class="slide-inner">
+                    <div class="container">
+                        <div class="sec-head slide-title-stay">
+                            <div class="sec-kicker">NEWS</div>
+                            <h2 class="sec-title">邦琪资讯</h2>
+                            <p class="sec-sub">聚焦企业发展动态与行业前沿资讯</p>
+                        </div>
+                        <div class="news-grid slide-enter from-bottom" data-stagger="0" id="newsArea">
+                            <div class="news-feature">
+                                {% set nf_colors = ["ph-green", "ph-ta", "ph-am", "ph-ti", "ph-li"] %}
+                                {% for n in latest_news %}
+                                    <a href="/news/{{ n.id }}" class="nf-slide {{ 'on' if loop.first }}">
+                                        <div class="ph {{ nf_colors[loop.index0 % 5] }} nf-media">
+                                            <img src="{{ img_url(n.image or NEWS_DEFAULT_IMAGE, 'news-feature', nf_colors[loop.index0 % 5]) }}"
+                                                 alt="{{ n.title }}" loading="lazy" decoding="async">
+                                        </div>
+                                        <div class="nf-overlay">
+                                            <span class="nf-cat">{{ n.category }}</span>
+                                            <h3 class="nf-title">{{ n.title }}</h3>
+                                            <p class="nf-excerpt">{{ n.content | plaintext | truncate(60) }}</p>
+                                            <span class="nf-meta"><span>{{ n.date }} 发布</span><em>阅读全文 →</em></span>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                                <div class="nf-progress"><span class="nf-progress-bar"></span></div>
+                            </div>
+                            <div class="news-side">
+                                <div class="ns-head">
+                                    <span class="serif">要闻速览 · TOP 5</span>
+                                    <a href="/news" class="ns-more">全部资讯 →</a>
+                                </div>
+                                {% for n in latest_news %}
+                                    <a href="/news/{{ n.id }}" class="ns-item {{ 'on' if loop.first }}"
+                                       data-idx="{{ loop.index0 }}">
+                                        <span class="ns-num serif">{{ "%02d" % loop.index }}</span>
+                                        <span class="ns-body">
                   <span class="ns-title">{{ n.title }}</span>
                   <span class="ns-meta">{{ n.category }} · {{ n.date }} · 阅读 {{ n.clicks }}</span>
                 </span>
-              </a>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== Slide 5: 走近邦琪（整体从下往上弹出） ===== -->
-    <section class="swiper-slide" data-slide="corp">
-      <div class="slide-inner slide-tint">
-        <div class="container">
-          <div class="sec-head slide-title-stay">
-            <div class="sec-kicker">CORPORATE</div>
-            <h2 class="sec-title">走近邦琪</h2>
-            <p class="sec-sub">组织架构 · 发展历程 · 品牌文化 · 科研开发</p>
-          </div>
-          <div class="row g-4">
-            {% for e in enterprise_cards %}
-            <div class="col-sm-6 col-lg-3 slide-enter from-bottom" data-stagger="{{ loop.index0 }}">
-              <a href="{{ e.link }}" class="corp-card">
-                {% if e.image %}
-                <div class="corp-img-wrap"><img src="{{ img_url(e.image, 'corp', e.color) }}" alt="{{ e.title }}"
-                                                loading="lazy" decoding="async"></div>
-                {% else %}
-                <div class="ph {{ e.color }} corp-ph"><span class="ph-tag">{{ e.title }}</span></div>
-                {% endif %}
-                <div class="corp-info">
-                  <h4>{{ e.title }}</h4>
-                  <p>{{ e.description }}</p>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </a>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-    </section>
+            </section>
 
-    <!-- ===== Slide 6: Footer（整体从下往上弹出） ===== -->
-    <section class="swiper-slide" data-slide="footer">
-      <div class="slide-inner slide-footer">
-        <div class="container slide-enter from-bottom" data-stagger="0">
-          <footer class="home-footer">
-            <div class="row g-4 footer-cols">
-              <div class="col-6 col-lg-2">
-                <h6>产品中心</h6>
-                <ul class="footer-links">
-                  {% for f in DOSAGE_FORMS %}
-                  <li><a href="/products?form={{ f }}">{{ f }}</a></li>
-                  {% endfor %}
-                </ul>
-              </div>
-              <div class="col-6 col-lg-2">
-                <h6>邦资讯</h6>
-                <ul class="footer-links">
-                  {% for c in NEWS_CATEGORIES %}
-                  <li><a href="/news?category={{ c }}">{{ c }}</a></li>
-                  {% endfor %}
-                </ul>
-              </div>
-              <div class="col-6 col-lg-2">
-                <h6>公司介绍</h6>
-                <ul class="footer-links">
-                  <li><a href="/about/集团介绍">集团介绍</a></li>
-                  <li><a href="/about/企业架构">企业架构</a></li>
-                  <li><a href="/about/社会责任">社会责任</a></li>
-                  <li><a href="/about/企业荣誉">企业荣誉</a></li>
-                </ul>
-              </div>
-              <div class="col-6 col-lg-2">
-                <h6>研发中心</h6>
-                <ul class="footer-links">
-                  <li><a href="/research/产品研发">产品研发</a></li>
-                  <li><a href="/research/质量机构">质量机构</a></li>
-                  <li><a href="/research/生产车间">生产车间</a></li>
-                </ul>
-              </div>
-              <div class="col-12 col-lg-4">
-                <h6>公司信息</h6>
-                <p class="footer-info mb-1"><strong>地址：</strong>{{ COMPANY.address }}</p>
-                <p class="footer-info mb-3"><strong>电话：</strong>{{ COMPANY.phone }}　<strong>邮箱：</strong>{{ COMPANY.email }}</p>
-                <div class="d-flex align-items-center gap-3">
+            <!-- ===== Slide 5: 走近邦琪（整体从下往上弹出） ===== -->
+            <section class="swiper-slide" data-slide="corp">
+                <div class="slide-inner slide-tint">
+                    <div class="container">
+                        <div class="sec-head slide-title-stay">
+                            <div class="sec-kicker">CORPORATE</div>
+                            <h2 class="sec-title">走近邦琪</h2>
+                            <p class="sec-sub">组织架构 · 发展历程 · 品牌文化 · 科研开发</p>
+                        </div>
+                        <div class="row g-4">
+                            {% for e in enterprise_cards %}
+                                <div class="col-sm-6 col-lg-3 slide-enter from-bottom" data-stagger="{{ loop.index0 }}">
+                                    <a href="{{ e.link }}" class="corp-card">
+                                        {% if e.image %}
+                                            <div class="corp-img-wrap"><img
+                                                    src="{{ img_url(e.image, 'corp', e.color) }}" alt="{{ e.title }}"
+                                                    loading="lazy" decoding="async"></div>
+                                        {% else %}
+                                            <div class="ph {{ e.color }} corp-ph"><span
+                                                    class="ph-tag">{{ e.title }}</span></div>
+                                        {% endif %}
+                                        <div class="corp-info">
+                                            <h4>{{ e.title }}</h4>
+                                            <p>{{ e.description }}</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Slide 6: Footer（整体从下往上弹出） ===== -->
+            <section class="swiper-slide" data-slide="footer">
+                <div class="slide-inner slide-footer">
+                    <div class="container slide-enter from-bottom" data-stagger="0">
+                        <footer class="home-footer">
+                            <div class="row g-4 footer-cols">
+                                <div class="col-6 col-lg-2">
+                                    <h6>产品中心</h6>
+                                    <ul class="footer-links">
+                                        {% for f in DOSAGE_FORMS[:8] %}
+                                            <li><a href="/products?form={{ f }}">{{ f }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="col-6 col-lg-2">
+                                    <h6>邦资讯</h6>
+                                    <ul class="footer-links">
+                                        {% for c in NEWS_CATEGORIES %}
+                                            <li><a href="/news?category={{ c }}">{{ c }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="col-6 col-lg-2">
+                                    <h6>公司介绍</h6>
+                                    <ul class="footer-links">
+                                        <li><a href="/about/集团介绍">集团介绍</a></li>
+                                        <li><a href="/about/企业架构">企业架构</a></li>
+                                        <li><a href="/about/社会责任">社会责任</a></li>
+                                        <li><a href="/about/企业荣誉">企业荣誉</a></li>
+                                    </ul>
+                                </div>
+                                <div class="col-6 col-lg-2">
+                                    <h6>研发中心</h6>
+                                    <ul class="footer-links">
+                                        <li><a href="/research/产品研发">产品研发</a></li>
+                                        <li><a href="/research/质量机构">质量机构</a></li>
+                                        <li><a href="/research/生产车间">生产车间</a></li>
+                                    </ul>
+                                </div>
+                                <div class="col-12 col-lg-4">
+                                    <h6>公司信息</h6>
+                                    <p class="footer-info mb-1"><strong>地址：</strong>{{ COMPANY.address }}</p>
+                                    <p class="footer-info mb-3">
+                                        <strong>电话：</strong>{{ COMPANY.phone }}　<strong>邮箱：</strong>{{ COMPANY.email }}
+                                    </p>
+                                    <div class="d-flex align-items-center gap-3">
                   <span class="qr-block">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7"
+                                                                                                 height="7" rx="1"/><rect
+                            x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
                   </span>
-                  <span class="qr-tip">扫码关注官方公众号<br><small>获取最新产品与健康资讯</small></span>
+                                        <span class="qr-tip">扫码关注官方公众号<br><small>获取最新产品与健康资讯</small></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                                <span>© 2026 {{ COMPANY.full_name }}　<a href="https://beian.miit.gov.cn/"
+                                                                        target="_blank"
+                                                                        rel="noopener">桂ICP备14001107号</a></span>
+                                <span>本站内容仅供参考，药品使用请遵医嘱或按说明书执行</span>
+                            </div>
+                        </footer>
+                    </div>
                 </div>
-              </div>
-            </div>
-            <div class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-              <span>© 2026 {{ COMPANY.full_name }}　<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">桂ICP备14001107号</a></span>
-              <span>本站内容仅供参考，药品使用请遵医嘱或按说明书执行</span>
-            </div>
-          </footer>
-        </div>
-      </div>
-    </section>
+            </section>
 
-  </div>
-  <!-- 右侧居中分页圆点 -->
-  <div class="swiper-pagination"></div>
-</div>
+        </div>
+        <!-- 右侧居中分页圆点 -->
+        <div class="swiper-pagination"></div>
+    </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='vendor/swiper/swiper-bundle.min.js') }}"></script>
-<script>
-/* 桌面端兜底：本地 vendor 的 Swiper 万一没加载成功，就把首页降级为普通文档流，
-   否则 body{overflow:hidden} + .slide-enter{opacity:0} 会让整页空白且无法滚动。 */
-if (typeof Swiper === "undefined") document.documentElement.classList.add("no-swiper");
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  /* ============ 主页 Swiper 全屏幻灯片 ============ */
-  // home-v1 / tb-no-anim 已由服务端写在 <body> 上，这里只需确认
-  document.body.classList.add("home-v1");
+    <script src="{{ url_for('static', filename='vendor/swiper/swiper-bundle.min.js') }}"></script>
+    <script>
+        /* 桌面端兜底：本地 vendor 的 Swiper 万一没加载成功，就把首页降级为普通文档流，
+           否则 body{overflow:hidden} + .slide-enter{opacity:0} 会让整页空白且无法滚动。 */
+        if (typeof Swiper === "undefined") document.documentElement.classList.add("no-swiper");
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            /* ============ 主页 Swiper 全屏幻灯片 ============ */
+            // home-v1 / tb-no-anim 已由服务端写在 <body> 上，这里只需确认
+            document.body.classList.add("home-v1");
 
-  /* ------------------------------------------------------------------
-     移动端首页：滚动进入的轻量入场动画（渐进增强）
-     ★ 只给「初始在视口之外」的元素加 .m-anim —— 首屏内的内容保持默认可见，
-       这样即使脚本半途失败，也不会有任何内容因此消失。
-     ------------------------------------------------------------------ */
-  function setupMobileHome() {
-    var els = document.querySelectorAll("#homeSwiper .slide-enter");
-    if (!els.length || !("IntersectionObserver" in window)) return;
+            /* ------------------------------------------------------------------
+               移动端首页：滚动进入的轻量入场动画（渐进增强）
+               ★ 只给「初始在视口之外」的元素加 .m-anim —— 首屏内的内容保持默认可见，
+                 这样即使脚本半途失败，也不会有任何内容因此消失。
+               ------------------------------------------------------------------ */
+            function setupMobileHome() {
+                var els = document.querySelectorAll("#homeSwiper .slide-enter");
+                if (!els.length || !("IntersectionObserver" in window)) return;
 
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (!en.isIntersecting) return;
-        en.target.classList.add("m-in");
-        io.unobserve(en.target);
-      });
-    }, { threshold: 0.08, rootMargin: "0px 0px -6% 0px" });
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (en) {
+                        if (!en.isIntersecting) return;
+                        en.target.classList.add("m-in");
+                        io.unobserve(en.target);
+                    });
+                }, {threshold: 0.08, rootMargin: "0px 0px -6% 0px"});
 
-    Array.prototype.forEach.call(els, function (e, i) {
-      if (e.getBoundingClientRect().top < window.innerHeight * 0.92) return;
-      e.classList.add("m-anim");
-      e.style.transitionDelay = (i % 3) * 0.08 + "s";
-      io.observe(e);
-    });
-  }
+                Array.prototype.forEach.call(els, function (e, i) {
+                    if (e.getBoundingClientRect().top < window.innerHeight * 0.92) return;
+                    e.classList.add("m-anim");
+                    e.style.transitionDelay = (i % 3) * 0.08 + "s";
+                    io.observe(e);
+                });
+            }
 
-  var el = document.getElementById("homeSwiper");
-  var isDesktop = !window.matchMedia || window.matchMedia("(min-width: 992px)").matches;
+            var el = document.getElementById("homeSwiper");
+            var isDesktop = !window.matchMedia || window.matchMedia("(min-width: 992px)").matches;
 
-  /* ------------------------------------------------------------------
-     ★ 移动端 / 平板（≤991.98px）：首页走「普通文档流」，不初始化 Swiper
-     ------------------------------------------------------------------
-     手机上一屏内容远高于一屏，而 Swiper 会把手指上滑当成翻屏
-     （touchStartPreventDefault 默认开启），屏内永远滚不动；
-     再叠加 .slide-inner 的 flex 居中，超高内容上溢部分彻底不可达。
-     文档流化之后内容 100% 可达，且不再依赖 Swiper 脚本存活。
-     ------------------------------------------------------------------ */
-  if (!isDesktop) {
-    setupMobileHome();
-    return;
-  }
+            /* ------------------------------------------------------------------
+               ★ 移动端 / 平板（≤991.98px）：首页走「普通文档流」，不初始化 Swiper
+               ------------------------------------------------------------------
+               手机上一屏内容远高于一屏，而 Swiper 会把手指上滑当成翻屏
+               （touchStartPreventDefault 默认开启），屏内永远滚不动；
+               再叠加 .slide-inner 的 flex 居中，超高内容上溢部分彻底不可达。
+               文档流化之后内容 100% 可达，且不再依赖 Swiper 脚本存活。
+               ------------------------------------------------------------------ */
+            if (!isDesktop) {
+                setupMobileHome();
+                return;
+            }
 
-  /* 桌面端兜底：Swiper 未加载成功时把首页降级为文档流（见 extra_css 里的 .no-swiper 规则），
-     否则 body{overflow:hidden} + .slide-enter{opacity:0} 会让整页空白且无法滚动。 */
-  if (!el || typeof Swiper === "undefined") {
-    document.documentElement.classList.add("no-swiper");
-    return;
-  }
+            /* 桌面端兜底：Swiper 未加载成功时把首页降级为文档流（见 extra_css 里的 .no-swiper 规则），
+               否则 body{overflow:hidden} + .slide-enter{opacity:0} 会让整页空白且无法滚动。 */
+            if (!el || typeof Swiper === "undefined") {
+                document.documentElement.classList.add("no-swiper");
+                return;
+            }
 
-  // 接管 .stat-num 数字动画：断开 main.js 的 IntersectionObserver（避免与 Swiper 时序冲突）
-  if (window.bqCountersObserver) {
-    window.bqCountersObserver.disconnect();
-    window.bqCountersObserver = null;
-  }
+            // 接管 .stat-num 数字动画：断开 main.js 的 IntersectionObserver（避免与 Swiper 时序冲突）
+            if (window.bqCountersObserver) {
+                window.bqCountersObserver.disconnect();
+                window.bqCountersObserver = null;
+            }
 
-  var topbar = document.getElementById("site-topbar");
-  var nav = document.getElementById("site-nav");
-  var footer = document.getElementById("site-footer");
-  if (footer && footer.style) footer.style.setProperty("display", "none", "important");
+            var topbar = document.getElementById("site-topbar");
+            var nav = document.getElementById("site-nav");
+            var footer = document.getElementById("site-footer");
+            if (footer && footer.style) footer.style.setProperty("display", "none", "important");
 
-  /* ------------------------------------------------------------------
-     布局测量：算出 topbar 展开高度、nav 高度
-     ------------------------------------------------------------------ */
-  var TB_H = 0;   // topbar 展开后的总高度（含 padding）
-  var NAV_H = 0;  // 导航栏高度
+            /* ------------------------------------------------------------------
+               布局测量：算出 topbar 展开高度、nav 高度
+               ------------------------------------------------------------------ */
+            var TB_H = 0;   // topbar 展开后的总高度（含 padding）
+            var NAV_H = 0;  // 导航栏高度
 
-  function measure() {
-    if (nav) NAV_H = Math.round(nav.getBoundingClientRect().height);
-    if (topbar) {
-      // 临时移除 .tb-hide 以测量 topbar 的真实展开高度
-      var wasHidden = topbar.classList.contains("tb-hide");
-      var prevTransition = topbar.style.transition;
-      topbar.style.transition = "none";
-      if (wasHidden) topbar.classList.remove("tb-hide");
-      TB_H = Math.round(topbar.getBoundingClientRect().height);
-      if (wasHidden) topbar.classList.add("tb-hide");
-      void topbar.offsetHeight;
-      topbar.style.transition = prevTransition;
-    }
-    var root = document.documentElement.style;
-    if (TB_H) root.setProperty("--tb-h", TB_H + "px");
-    if (NAV_H) root.setProperty("--nav-h", NAV_H + "px");
-  }
+            function measure() {
+                if (nav) NAV_H = Math.round(nav.getBoundingClientRect().height);
+                if (topbar) {
+                    // 临时移除 .tb-hide 以测量 topbar 的真实展开高度
+                    var wasHidden = topbar.classList.contains("tb-hide");
+                    var prevTransition = topbar.style.transition;
+                    topbar.style.transition = "none";
+                    if (wasHidden) topbar.classList.remove("tb-hide");
+                    TB_H = Math.round(topbar.getBoundingClientRect().height);
+                    if (wasHidden) topbar.classList.add("tb-hide");
+                    void topbar.offsetHeight;
+                    topbar.style.transition = prevTransition;
+                }
+                var root = document.documentElement.style;
+                if (TB_H) root.setProperty("--tb-h", TB_H + "px");
+                if (NAV_H) root.setProperty("--nav-h", NAV_H + "px");
+            }
 
-  /* ------------------------------------------------------------------
-     八大剂型卡片高度 —— 按 slide 可用高度算出每张卡片的
-     最大高度，保证 4 列 × 2 行 + 标题在任何屏幕高度下都完整可见
-     ------------------------------------------------------------------ */
-  function calcFormCardHeight() {
-    var slide = el.querySelector('[data-slide="products"]');
-    if (!slide) return;
-    var inner = slide.querySelector(".slide-inner");
-    if (!inner) return;
+            /* ------------------------------------------------------------------
+               八大剂型卡片高度 —— 按 slide 可用高度算出每张卡片的
+               最大高度，保证 4 列 × 2 行 + 标题在任何屏幕高度下都完整可见
+               ------------------------------------------------------------------ */
+            function calcFormCardHeight() {
+                var slide = el.querySelector('[data-slide="products"]');
+                if (!slide) return;
+                var inner = slide.querySelector(".slide-inner");
+                if (!inner) return;
 
-    var cs = window.getComputedStyle(inner);
-    var padTop = parseFloat(cs.paddingTop) || 0;
-    var padBottom = parseFloat(cs.paddingBottom) || 0;
+                var cs = window.getComputedStyle(inner);
+                var padTop = parseFloat(cs.paddingTop) || 0;
+                var padBottom = parseFloat(cs.paddingBottom) || 0;
 
-    var head = slide.querySelector(".sec-head");
-    var headH = head ? head.getBoundingClientRect().height : 0;
+                var head = slide.querySelector(".sec-head");
+                var headH = head ? head.getBoundingClientRect().height : 0;
 
-    var grid = slide.querySelector(".form-grid");
-    var rowGap = 12;
-    if (grid) {
-      var gcs = window.getComputedStyle(grid);
-      rowGap = parseFloat(gcs.rowGap) || parseFloat(gcs.gap) || 12;
-    }
+                var grid = slide.querySelector(".form-grid");
+                var rowGap = 12;
+                if (grid) {
+                    var gcs = window.getComputedStyle(grid);
+                    rowGap = parseFloat(gcs.rowGap) || parseFloat(gcs.gap) || 12;
+                }
 
-    var avail = slide.clientHeight - padTop - padBottom - headH;
-    // 2 行 + 1 个行间距
-    var cardH = Math.floor((avail - rowGap) / 2);
-    // 合理区间：不低于 140px，且不超过列宽推算的上限（留点余量）
-    cardH = Math.max(140, cardH);
-    var colW = 0;
-    if (grid) {
-      var cols = window.getComputedStyle(grid).gridTemplateColumns.split(" ");
-      if (cols.length) colW = parseFloat(cols[0]) || 0;
-    }
-    if (colW > 0) {
-      // aspect-ratio 3/4 → 高度 = 宽度 / 0.75
-      cardH = Math.min(cardH, Math.floor(colW / 0.75));
-    }
-    document.documentElement.style.setProperty("--form-card-h", cardH + "px");
-  }
+                var avail = slide.clientHeight - padTop - padBottom - headH;
+                // 2 行 + 1 个行间距
+                var cardH = Math.floor((avail - rowGap) / 2);
+                // 合理区间：不低于 140px，且不超过列宽推算的上限（留点余量）
+                cardH = Math.max(140, cardH);
+                var colW = 0;
+                if (grid) {
+                    var cols = window.getComputedStyle(grid).gridTemplateColumns.split(" ");
+                    if (cols.length) colW = parseFloat(cols[0]) || 0;
+                }
+                if (colW > 0) {
+                    // aspect-ratio 3/4 → 高度 = 宽度 / 0.75
+                    cardH = Math.min(cardH, Math.floor(colW / 0.75));
+                }
+                document.documentElement.style.setProperty("--form-card-h", cardH + "px");
+            }
 
-  /* ------------------------------------------------------------------
-     位置同步：把 topbar / nav / swiper 三者的位置用「单一变量」统一更新，
-     避免多处 calc 取值不同步导致两条之间出现空白缝隙
-     ------------------------------------------------------------------ */
-  var SWIPER_TOP_MS = 450;   // 与 CSS 里 .home-swiper 的 top 过渡时长保持一致
+            /* ------------------------------------------------------------------
+               位置同步：把 topbar / nav / swiper 三者的位置用「单一变量」统一更新，
+               避免多处 calc 取值不同步导致两条之间出现空白缝隙
+               ------------------------------------------------------------------ */
+            var SWIPER_TOP_MS = 450;   // 与 CSS 里 .home-swiper 的 top 过渡时长保持一致
 
-  function applyOffset(topbarOpen, instant) {
-    var root = document.documentElement.style;
-    var tbH = topbarOpen ? TB_H : 0;
-    // 导航栏顶部 = topbar 展开时下移一个 topbar 高度，否则贴顶
-    root.setProperty("--nav-top", tbH + "px");
-    // swiper 顶部 = topbar(若展开) + 导航栏高度 —— 精确咬合，不留缝
-    root.setProperty("--swiper-top", (tbH + NAV_H) + "px");
-    // ★ 容器高度跟着变了，必须同步 Swiper 的内部尺寸（见下方说明）。
-    //   instant=true 用于「已禁用过渡」的场景（如窗口 resize），只需对齐一帧
-    syncSwiperSizeDuring(instant ? 0 : SWIPER_TOP_MS);
-  }
+            function applyOffset(topbarOpen, instant) {
+                var root = document.documentElement.style;
+                var tbH = topbarOpen ? TB_H : 0;
+                // 导航栏顶部 = topbar 展开时下移一个 topbar 高度，否则贴顶
+                root.setProperty("--nav-top", tbH + "px");
+                // swiper 顶部 = topbar(若展开) + 导航栏高度 —— 精确咬合，不留缝
+                root.setProperty("--swiper-top", (tbH + NAV_H) + "px");
+                // ★ 容器高度跟着变了，必须同步 Swiper 的内部尺寸（见下方说明）。
+                //   instant=true 用于「已禁用过渡」的场景（如窗口 resize），只需对齐一帧
+                syncSwiperSizeDuring(instant ? 0 : SWIPER_TOP_MS);
+            }
 
-  /* ------------------------------------------------------------------
-     ★★ Swiper 内部尺寸同步（关键修复）★★
+            /* ------------------------------------------------------------------
+               ★★ Swiper 内部尺寸同步（关键修复）★★
 
-     现象：第 5 屏「走近邦琪」底边会露出下一屏（footer）的顶部，
-          露出的高度正好是一个 topbar 的高度。
+               现象：第 5 屏「走近邦琪」底边会露出下一屏（footer）的顶部，
+                    露出的高度正好是一个 topbar 的高度。
 
-     根因：.home-swiper 的 top 要随 topbar 显隐变化 ——
-          banner / footer 两屏展开 topbar（top = 108px），其余屏收起（top = 76px），
-          容器高度因此相差一个 topbar 的高度（约 31~32px）。
-          Swiper 会把每一屏的行内高度写成「它自己缓存的容器高度」，
-          位移也按这个缓存高度算，而它只在 window resize 时才重新测量。
-          我们为了解决「入场动画被反复重置」把 resizeObserver 关掉了
-          （Swiper 默认开启，它会逐帧触发 slideToClosest，是那次的根源），
-          于是 topbar 收起、容器由 462 变高到 494 之后，Swiper 仍按 462 布局：
-          每屏只有 462 高，却待在 494 高的容器里 →
-          容器底部必然露出下一屏的顶部一条，露出的高度正好等于 topbar 的高度。
+               根因：.home-swiper 的 top 要随 topbar 显隐变化 ——
+                    banner / footer 两屏展开 topbar（top = 108px），其余屏收起（top = 76px），
+                    容器高度因此相差一个 topbar 的高度（约 31~32px）。
+                    Swiper 会把每一屏的行内高度写成「它自己缓存的容器高度」，
+                    位移也按这个缓存高度算，而它只在 window resize 时才重新测量。
+                    我们为了解决「入场动画被反复重置」把 resizeObserver 关掉了
+                    （Swiper 默认开启，它会逐帧触发 slideToClosest，是那次的根源），
+                    于是 topbar 收起、容器由 462 变高到 494 之后，Swiper 仍按 462 布局：
+                    每屏只有 462 高，却待在 494 高的容器里 →
+                    容器底部必然露出下一屏的顶部一条，露出的高度正好等于 topbar 的高度。
 
-     修法：不重新打开 resizeObserver（那会重新引入逐帧事件风暴），
-          改为在容器高度变化期间用 rAF 逐帧把 Swiper 的尺寸静默对齐：
-          updateSize → updateSlides → slideTo(当前屏, 速度 0, 不触发回调)。
-          speed 0 且 internal 的模式只改位移、不派发事件、不动动画队列，
-          因此不会干扰正在播放的版块入场动画。
-     ------------------------------------------------------------------ */
-  var sizeSyncRAF = 0;
+               修法：不重新打开 resizeObserver（那会重新引入逐帧事件风暴），
+                    改为在容器高度变化期间用 rAF 逐帧把 Swiper 的尺寸静默对齐：
+                    updateSize → updateSlides → slideTo(当前屏, 速度 0, 不触发回调)。
+                    speed 0 且 internal 的模式只改位移、不派发事件、不动动画队列，
+                    因此不会干扰正在播放的版块入场动画。
+               ------------------------------------------------------------------ */
+            var sizeSyncRAF = 0;
 
-  function syncSwiperSize() {
-    var sw = window.bqHomeSwiper;
-    if (!sw || sw.destroyed) return;   // 初始化阶段 swiper 还没创建
-    if (sw.animating) return;          // 正在切换中 → 让出控制权，别截断过渡
-    sw.updateSize();
-    sw.updateSlides();
-    sw.slideTo(sw.activeIndex, 0, false, true);
-  }
+            function syncSwiperSize() {
+                var sw = window.bqHomeSwiper;
+                if (!sw || sw.destroyed) return;   // 初始化阶段 swiper 还没创建
+                if (sw.animating) return;          // 正在切换中 → 让出控制权，别截断过渡
+                sw.updateSize();
+                sw.updateSlides();
+                sw.slideTo(sw.activeIndex, 0, false, true);
+            }
 
-  /* 在 ms 时长内逐帧跟随容器高度的过渡（0 = 只对齐一帧，用于瞬时变化） */
-  function syncSwiperSizeDuring(ms) {
-    if (sizeSyncRAF) cancelAnimationFrame(sizeSyncRAF);
-    var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
-    var now = function () {
-      return (window.performance && performance.now) ? performance.now() : Date.now();
-    };
-    var step = function () {
-      syncSwiperSize();
-      if (now() - t0 < ms + 80) {
-        sizeSyncRAF = requestAnimationFrame(step);
-      } else {
-        sizeSyncRAF = 0;
-      }
-    };
-    sizeSyncRAF = requestAnimationFrame(step);
-  }
+            /* 在 ms 时长内逐帧跟随容器高度的过渡（0 = 只对齐一帧，用于瞬时变化） */
+            function syncSwiperSizeDuring(ms) {
+                if (sizeSyncRAF) cancelAnimationFrame(sizeSyncRAF);
+                var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+                var now = function () {
+                    return (window.performance && performance.now) ? performance.now() : Date.now();
+                };
+                var step = function () {
+                    syncSwiperSize();
+                    if (now() - t0 < ms + 80) {
+                        sizeSyncRAF = requestAnimationFrame(step);
+                    } else {
+                        sizeSyncRAF = 0;
+                    }
+                };
+                sizeSyncRAF = requestAnimationFrame(step);
+            }
 
-  /* ------------------------------------------------------------------
-     topbar 显隐
-     - banner 屏 & footer 屏 → 展开
-     - 其他屏 → 收起
-     默认 CSS 态即展开，所以刷新时不会「先消失再弹出」
-     ------------------------------------------------------------------ */
-  function syncTopbar(slideKey) {
-    if (!topbar) return;
-    // banner 和 footer 两屏显示 topbar，其余收起
-    var open = (slideKey === "banner" || slideKey === "footer");
+            /* ------------------------------------------------------------------
+               topbar 显隐
+               - banner 屏 & footer 屏 → 展开
+               - 其他屏 → 收起
+               默认 CSS 态即展开，所以刷新时不会「先消失再弹出」
+               ------------------------------------------------------------------ */
+            function syncTopbar(slideKey) {
+                if (!topbar) return;
+                // banner 和 footer 两屏显示 topbar，其余收起
+                var open = (slideKey === "banner" || slideKey === "footer");
 
-    if (open) {
-      topbar.classList.remove("tb-hide");
-      document.body.classList.add("is-banner-slide");
-    } else {
-      topbar.classList.add("tb-hide");
-      document.body.classList.remove("is-banner-slide");
-    }
-    applyOffset(open);
-  }
+                if (open) {
+                    topbar.classList.remove("tb-hide");
+                    document.body.classList.add("is-banner-slide");
+                } else {
+                    topbar.classList.add("tb-hide");
+                    document.body.classList.remove("is-banner-slide");
+                }
+                applyOffset(open);
+            }
 
-  function slideKeyOf(sw) {
-    if (!sw || !sw.slides) return "banner";
-    var s = sw.slides[sw.activeIndex];
-    return s ? (s.dataset.slide || "") : "";
-  }
+            function slideKeyOf(sw) {
+                if (!sw || !sw.slides) return "banner";
+                var s = sw.slides[sw.activeIndex];
+                return s ? (s.dataset.slide || "") : "";
+            }
 
-  /* ------------------------------------------------------------------
-     问题 2：进入各屏时元素弹出动画 —— 用 Web Animations API 重放
-     每次进入都新建一次 animation，彻底避免「只播一次 / 复播无效」
-     ------------------------------------------------------------------ */
-  var EASE = "cubic-bezier(.2,.8,.3,1)";
-  var DUR = 850;
+            /* ------------------------------------------------------------------
+               问题 2：进入各屏时元素弹出动画 —— 用 Web Animations API 重放
+               每次进入都新建一次 animation，彻底避免「只播一次 / 复播无效」
+               ------------------------------------------------------------------ */
+            var EASE = "cubic-bezier(.2,.8,.3,1)";
+            var DUR = 850;
 
-  function initialTransform(e) {
-    if (e.classList.contains("from-left"))   return "translateX(-110%)";
-    if (e.classList.contains("from-right"))  return "translateX(110%)";
-    if (e.classList.contains("from-bottom")) return "translateY(100%)";
-    if (e.classList.contains("from-fade"))   return "translateY(40px)";
-    return "translateY(40px)";
-  }
+            function initialTransform(e) {
+                if (e.classList.contains("from-left")) return "translateX(-110%)";
+                if (e.classList.contains("from-right")) return "translateX(110%)";
+                if (e.classList.contains("from-bottom")) return "translateY(100%)";
+                if (e.classList.contains("from-fade")) return "translateY(40px)";
+                return "translateY(40px)";
+            }
 
-  /* 取消某元素上「所有」WAAPI 动画。
-     ★ 不能只认自己存的 _bqAnim 引用 —— 动画播完后 _bqAnim 会被置空，
-       但动画对象本身仍带着 fill 效果存活。此时只改内联样式是盖不住它的，
-       必须用 getAnimations() 把它们一并取消。 */
-  function killAnimsOn(e) {
-    if (e._bqAnim) { try { e._bqAnim.cancel(); } catch (err) {} e._bqAnim = null; }
-    if (typeof e.getAnimations === "function") {
-      e.getAnimations().forEach(function (a) { try { a.cancel(); } catch (err) {} });
-    }
-  }
+            /* 取消某元素上「所有」WAAPI 动画。
+               ★ 不能只认自己存的 _bqAnim 引用 —— 动画播完后 _bqAnim 会被置空，
+                 但动画对象本身仍带着 fill 效果存活。此时只改内联样式是盖不住它的，
+                 必须用 getAnimations() 把它们一并取消。 */
+            function killAnimsOn(e) {
+                if (e._bqAnim) {
+                    try {
+                        e._bqAnim.cancel();
+                    } catch (err) {
+                    }
+                    e._bqAnim = null;
+                }
+                if (typeof e.getAnimations === "function") {
+                    e.getAnimations().forEach(function (a) {
+                        try {
+                            a.cancel();
+                        } catch (err) {
+                        }
+                    });
+                }
+            }
 
-  /* 把某屏内所有 .slide-enter 元素「瞬间」摆回初始位置（不可见态）。
-     ★ 必须在版块「开始滑入之前」调用，否则用户会先看到内容在原位、
-       然后突然被弹回起点再滑进来。
-     ★ 且每次导航只允许调用一次 —— 被反复调用会把刚播出的入场动画
-       取消掉，内容会永远停在隐藏态（footer 文字消失就是这个原因）。 */
-  function resetSlide(slide) {
-    if (!slide) return;
-    slide.querySelectorAll(".slide-enter").forEach(function (e) {
-      killAnimsOn(e);
-      e.style.transition = "none";
-      e.style.opacity = "0";
-      e.style.transform = initialTransform(e);
-    });
-    // 强制样式计算，让初始态立即生效（此时该屏还没滑入，用户看不到这一帧）
-    void slide.offsetHeight;
-  }
+            /* 把某屏内所有 .slide-enter 元素「瞬间」摆回初始位置（不可见态）。
+               ★ 必须在版块「开始滑入之前」调用，否则用户会先看到内容在原位、
+                 然后突然被弹回起点再滑进来。
+               ★ 且每次导航只允许调用一次 —— 被反复调用会把刚播出的入场动画
+                 取消掉，内容会永远停在隐藏态（footer 文字消失就是这个原因）。 */
+            function resetSlide(slide) {
+                if (!slide) return;
+                slide.querySelectorAll(".slide-enter").forEach(function (e) {
+                    killAnimsOn(e);
+                    e.style.transition = "none";
+                    e.style.opacity = "0";
+                    e.style.transform = initialTransform(e);
+                });
+                // 强制样式计算，让初始态立即生效（此时该屏还没滑入，用户看不到这一帧）
+                void slide.offsetHeight;
+            }
 
-  /* 播放某屏的弹入动画。每次都用全新的 animation 实例 → 必定重播。 */
-  function playSlide(slide) {
-    if (!slide) return 0;
-    var enters = Array.prototype.slice.call(slide.querySelectorAll(".slide-enter"));
-    var maxDelay = 0;
+            /* 播放某屏的弹入动画。每次都用全新的 animation 实例 → 必定重播。 */
+            function playSlide(slide) {
+                if (!slide) return 0;
+                var enters = Array.prototype.slice.call(slide.querySelectorAll(".slide-enter"));
+                var maxDelay = 0;
 
-    enters.forEach(function (e) {
-      var s = parseInt(e.dataset.stagger || 0, 10);
-      var delay = s * 0.18;
-      if (delay > maxDelay) maxDelay = delay;
+                enters.forEach(function (e) {
+                    var s = parseInt(e.dataset.stagger || 0, 10);
+                    var delay = s * 0.18;
+                    if (delay > maxDelay) maxDelay = delay;
 
-      if (e._bqAnim) { try { e._bqAnim.cancel(); } catch (err) {} }
+                    if (e._bqAnim) {
+                        try {
+                            e._bqAnim.cancel();
+                        } catch (err) {
+                        }
+                    }
 
-      // 兜底：确保初始态已就位（resetSlide 已设过则这里是幂等的）
-      e.style.transition = "none";
-      e.style.opacity = "0";
-      e.style.transform = initialTransform(e);
-    });
+                    // 兜底：确保初始态已就位（resetSlide 已设过则这里是幂等的）
+                    e.style.transition = "none";
+                    e.style.opacity = "0";
+                    e.style.transform = initialTransform(e);
+                });
 
-    void slide.offsetHeight;
+                void slide.offsetHeight;
 
-    enters.forEach(function (e) {
-      var s = parseInt(e.dataset.stagger || 0, 10);
-      var anim = e.animate(
-        [
-          { opacity: 0, transform: initialTransform(e) },
-          { opacity: 1, transform: "translateX(0) translateY(0)" }
-        ],
-        {
-          duration: DUR,
-          delay: s * 180,
-          easing: EASE,
-          fill: "both"
-        }
-      );
-      e._bqAnim = anim;
-      /* ★ 动画结束后必须把「已入场」的最终态写进内联样式，再取消动画对象。
-         绝不能像之前那样把内联样式清空「交回 CSS 控制」——
-         CSS 里 .slide-enter 的默认态是 opacity:0，
-         内联样式一旦清空、动画对象一旦被取消，元素会立刻掉回隐藏态，
-         表现为「内容显示一下就消失」，甚至永久不可见。 */
-      anim.onfinish = function () {
-        e._bqAnim = null;
-        e.style.transition = "none";
-        e.style.opacity = "1";
-        e.style.transform = "translateX(0) translateY(0)";
-        try { anim.cancel(); } catch (err) {}
-      };
-    });
+                enters.forEach(function (e) {
+                    var s = parseInt(e.dataset.stagger || 0, 10);
+                    var anim = e.animate(
+                        [
+                            {opacity: 0, transform: initialTransform(e)},
+                            {opacity: 1, transform: "translateX(0) translateY(0)"}
+                        ],
+                        {
+                            duration: DUR,
+                            delay: s * 180,
+                            easing: EASE,
+                            fill: "both"
+                        }
+                    );
+                    e._bqAnim = anim;
+                    /* ★ 动画结束后必须把「已入场」的最终态写进内联样式，再取消动画对象。
+                       绝不能像之前那样把内联样式清空「交回 CSS 控制」——
+                       CSS 里 .slide-enter 的默认态是 opacity:0，
+                       内联样式一旦清空、动画对象一旦被取消，元素会立刻掉回隐藏态，
+                       表现为「内容显示一下就消失」，甚至永久不可见。 */
+                    anim.onfinish = function () {
+                        e._bqAnim = null;
+                        e.style.transition = "none";
+                        e.style.opacity = "1";
+                        e.style.transform = "translateX(0) translateY(0)";
+                        try {
+                            anim.cancel();
+                        } catch (err) {
+                        }
+                    };
+                });
 
-    return maxDelay;
-  }
+                return maxDelay;
+            }
 
-  /* ------------------------------------------------------------------
-     问题 3：三圆环数字 + 进度环 —— 只在第一次进入 about 屏时播放一次
-     ------------------------------------------------------------------ */
-  var aboutPlayed = false;
+            /* ------------------------------------------------------------------
+               问题 3：三圆环数字 + 进度环 —— 只在第一次进入 about 屏时播放一次
+               ------------------------------------------------------------------ */
+            var aboutPlayed = false;
 
-  function playAboutStats(slide) {
-    if (aboutPlayed) return;
-    aboutPlayed = true;
-    slide.querySelectorAll(".stat-num").forEach(function (n) {
-      if (typeof window.bqAnimateCounter === "function") {
-        window.bqAnimateCounter(n);
-      }
-    });
-  }
+            function playAboutStats(slide) {
+                if (aboutPlayed) return;
+                aboutPlayed = true;
+                slide.querySelectorAll(".stat-num").forEach(function (n) {
+                    if (typeof window.bqAnimateCounter === "function") {
+                        window.bqAnimateCounter(n);
+                    }
+                });
+            }
 
-  /* ------------------------------------------------------------------
-     Banner 过渡参数
-     ★ 图片缩放（Ken Burns / 缓慢巡航）已整体弃用 —— 用户反馈缩放效果
-       始终难以做到理想（切换时交叉淡入阶段容易出现「放大再缩小」的观感）。
-       现在只保留「推移 + 视差」这一层纯粹的位移过渡，视觉更干净可控。
-     ------------------------------------------------------------------ */
-  var PARALLAX_MS = 1200;                        // 推移过渡时长
-  var PARALLAX_EASE = "cubic-bezier(.4,0,.2,1)";
-  var PARALLAX_SHIFT = 4;                        // 旧图反向平移量（%）
+            /* ------------------------------------------------------------------
+               Banner 过渡参数
+               ★ 图片缩放（Ken Burns / 缓慢巡航）已整体弃用 —— 用户反馈缩放效果
+                 始终难以做到理想（切换时交叉淡入阶段容易出现「放大再缩小」的观感）。
+                 现在只保留「推移 + 视差」这一层纯粹的位移过渡，视觉更干净可控。
+               ------------------------------------------------------------------ */
+            var PARALLAX_MS = 1200;                        // 推移过渡时长
+            var PARALLAX_EASE = "cubic-bezier(.4,0,.2,1)";
+            var PARALLAX_SHIFT = 4;                        // 旧图反向平移量（%）
 
-  /* 切换过渡：新图从右往左推入并淡入 + 旧图反向向右慢移并淡出
-     两套动画都作用在 .carousel-item 外层容器上。 */
-  function transitionBanner(bannerEl, next, prev) {
-    if (!bannerEl || !next) return;
-    if (prev === next) return;
+            /* 切换过渡：新图从右往左推入并淡入 + 旧图反向向右慢移并淡出
+               两套动画都作用在 .carousel-item 外层容器上。 */
+            function transitionBanner(bannerEl, next, prev) {
+                if (!bannerEl || !next) return;
+                if (prev === next) return;
 
-    if (prev) prev.classList.add("bq-leaving");
-    next.classList.add("bq-entering");
+                if (prev) prev.classList.add("bq-leaving");
+                next.classList.add("bq-entering");
 
-    // 新图：从右往左推入，同时淡入（Bootstrap 的 fade 过渡已在 CSS 中关闭）
-    next.animate(
-      [
-        { transform: "translateX(100%)", opacity: 0 },
-        { transform: "translateX(0)", opacity: 1 }
-      ],
-      { duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both" }
-    );
+                // 新图：从右往左推入，同时淡入（Bootstrap 的 fade 过渡已在 CSS 中关闭）
+                next.animate(
+                    [
+                        {transform: "translateX(100%)", opacity: 0},
+                        {transform: "translateX(0)", opacity: 1}
+                    ],
+                    {duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both"}
+                );
 
-    // 旧图：反向向右慢移 4% 并淡出，形成视差纵深
-    if (prev) {
-      var leaving = prev.animate(
-        [
-          { transform: "translateX(0)", opacity: 1 },
-          { transform: "translateX(" + PARALLAX_SHIFT + "%)", opacity: 0 }
-        ],
-        { duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both" }
-      );
-      leaving.onfinish = function () {
-        prev.classList.remove("bq-leaving");
-        try { leaving.cancel(); } catch (e) {}
-      };
-    }
+                // 旧图：反向向右慢移 4% 并淡出，形成视差纵深
+                if (prev) {
+                    var leaving = prev.animate(
+                        [
+                            {transform: "translateX(0)", opacity: 1},
+                            {transform: "translateX(" + PARALLAX_SHIFT + "%)", opacity: 0}
+                        ],
+                        {duration: PARALLAX_MS, easing: PARALLAX_EASE, fill: "both"}
+                    );
+                    leaving.onfinish = function () {
+                        prev.classList.remove("bq-leaving");
+                        try {
+                            leaving.cancel();
+                        } catch (e) {
+                        }
+                    };
+                }
 
-    setTimeout(function () {
-      next.classList.remove("bq-entering");
-    }, PARALLAX_MS + 60);
-  }
+                setTimeout(function () {
+                    next.classList.remove("bq-entering");
+                }, PARALLAX_MS + 60);
+            }
 
-  function bindBanner(banner) {
-    if (!banner) return;
+            function bindBanner(banner) {
+                if (!banner) return;
 
-    /* ------------------------------------------------------------------
-       ★ 切换动画：推移 + 视差
+                /* ------------------------------------------------------------------
+                   ★ 切换动画：推移 + 视差
 
-       实现思路（重要）：
-       _不要_ 用 preventDefault() 去接管 Bootstrap 的切换流程。那样虽然能
-       阻止它自带的淡入，但也会连带阻止它内部的 _resetInterval()，导致
-       自动轮播在第一次切换后就再也不触发（实测踩过这个坑）。
+                   实现思路（重要）：
+                   _不要_ 用 preventDefault() 去接管 Bootstrap 的切换流程。那样虽然能
+                   阻止它自带的淡入，但也会连带阻止它内部的 _resetInterval()，导致
+                   自动轮播在第一次切换后就再也不触发（实测踩过这个坑）。
 
-       正确做法是让 Bootstrap 完全按它自己的节奏走（它负责 .active 切换、
-       计时器续期、事件派发），我们只在它切完之后，额外在新图上叠加一层
-       「从右往左推入」，在旧图上叠加一层「反向向右慢移」的视差退出。
-       两层动画都作用在 .carousel-item 外层容器上，互不干扰。
+                   正确做法是让 Bootstrap 完全按它自己的节奏走（它负责 .active 切换、
+                   计时器续期、事件派发），我们只在它切完之后，额外在新图上叠加一层
+                   「从右往左推入」，在旧图上叠加一层「反向向右慢移」的视差退出。
+                   两层动画都作用在 .carousel-item 外层容器上，互不干扰。
 
-       为了让推移可见，需要在 CSS 里关掉 carousel-fade 自带的 opacity 过渡，
-       改由我们显式控制两层的不透明度。
-       ------------------------------------------------------------------ */
-    banner.addEventListener("slid.bs.carousel", function (ev) {
-      var next = ev.relatedTarget;
-      var prev = window.bqPrevBannerItem;
-      if (next) {
-        transitionBanner(banner, next, prev);
-      }
-      window.bqPrevBannerItem = next;
-    });
+                   为了让推移可见，需要在 CSS 里关掉 carousel-fade 自带的 opacity 过渡，
+                   改由我们显式控制两层的不透明度。
+                   ------------------------------------------------------------------ */
+                banner.addEventListener("slid.bs.carousel", function (ev) {
+                    var next = ev.relatedTarget;
+                    var prev = window.bqPrevBannerItem;
+                    if (next) {
+                        transitionBanner(banner, next, prev);
+                    }
+                    window.bqPrevBannerItem = next;
+                });
 
-    /* ★ 不在这里做 mouseenter/mouseleave 干预：
-       需求明确「banner 切换不应受鼠标指向影响」。
-       Bootstrap carousel 的 pause 默认值是 "hover"（会悬停暂停），
-       已在 HTML 上用 data-bs-pause="false" 显式关掉 —— 这才是正确的修法。
-       之前在这里手写 pause()/cycle() 反而会让悬停后彻底不再切换，
-       两者都不要。
-       唯一保留的是「页面切到后台时暂停」，避免后台空转堆定时器。 */
-    document.addEventListener("visibilitychange", function () {
-      if (!window.bootstrap || !bootstrap.Carousel) return;
-      var inst = bootstrap.Carousel.getInstance(banner);
-      if (!inst) return;
-      if (document.hidden) inst.pause();
-      else inst.cycle();
-    });
-  }
+                /* ★ 不在这里做 mouseenter/mouseleave 干预：
+                   需求明确「banner 切换不应受鼠标指向影响」。
+                   Bootstrap carousel 的 pause 默认值是 "hover"（会悬停暂停），
+                   已在 HTML 上用 data-bs-pause="false" 显式关掉 —— 这才是正确的修法。
+                   之前在这里手写 pause()/cycle() 反而会让悬停后彻底不再切换，
+                   两者都不要。
+                   唯一保留的是「页面切到后台时暂停」，避免后台空转堆定时器。 */
+                document.addEventListener("visibilitychange", function () {
+                    if (!window.bootstrap || !bootstrap.Carousel) return;
+                    var inst = bootstrap.Carousel.getInstance(banner);
+                    if (!inst) return;
+                    if (document.hidden) inst.pause();
+                    else inst.cycle();
+                });
+            }
 
-  /* ------------------------------------------------------------------
-     初始化
-     ★ 关键：先禁用过渡（tb-no-anim），跑完测量与位置同步后再移除，
-       彻底消除刷新时导航栏「先下弹一下」的动画
-     ------------------------------------------------------------------ */
-  document.body.classList.add("tb-no-anim");
+            /* ------------------------------------------------------------------
+               初始化
+               ★ 关键：先禁用过渡（tb-no-anim），跑完测量与位置同步后再移除，
+                 彻底消除刷新时导航栏「先下弹一下」的动画
+               ------------------------------------------------------------------ */
+            document.body.classList.add("tb-no-anim");
 
-  measure();
-  calcFormCardHeight();
-  applyOffset(true);   // 首屏是 banner → topbar 展开
+            measure();
+            calcFormCardHeight();
+            applyOffset(true);   // 首屏是 banner → topbar 展开
 
-  // 强制一帧，确保上面的定位在无过渡状态下已经应用
-  void document.body.offsetHeight;
+            // 强制一帧，确保上面的定位在无过渡状态下已经应用
+            void document.body.offsetHeight;
 
-  // 下一帧恢复过渡，之后的切换才有平滑动画
-  requestAnimationFrame(function () {
-    requestAnimationFrame(function () {
-      document.body.classList.remove("tb-no-anim");
-    });
-  });
+            // 下一帧恢复过渡，之后的切换才有平滑动画
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    document.body.classList.remove("tb-no-anim");
+                });
+            });
 
-  window.addEventListener("resize", function () {
-    var wasOpen = !(topbar && topbar.classList.contains("tb-hide"));
-    // resize 期间也禁用过渡，避免拖动窗口时出现抖动
-    document.body.classList.add("tb-no-anim");
-    measure();
-    calcFormCardHeight();
-    applyOffset(wasOpen, true);   // 无过渡 → 尺寸只需瞬时对齐
-    void document.body.offsetHeight;
-    requestAnimationFrame(function () {
-      document.body.classList.remove("tb-no-anim");
-    });
-  });
+            window.addEventListener("resize", function () {
+                var wasOpen = !(topbar && topbar.classList.contains("tb-hide"));
+                // resize 期间也禁用过渡，避免拖动窗口时出现抖动
+                document.body.classList.add("tb-no-anim");
+                measure();
+                calcFormCardHeight();
+                applyOffset(wasOpen, true);   // 无过渡 → 尺寸只需瞬时对齐
+                void document.body.offsetHeight;
+                requestAnimationFrame(function () {
+                    document.body.classList.remove("tb-no-anim");
+                });
+            });
 
-  // 图片/字体加载完后布局可能变化，重算一次卡片高度
-  window.addEventListener("load", function () {
-    calcFormCardHeight();
-    measure();
-    applyOffset(!(topbar && topbar.classList.contains("tb-hide")));
-  });
+            // 图片/字体加载完后布局可能变化，重算一次卡片高度
+            window.addEventListener("load", function () {
+                calcFormCardHeight();
+                measure();
+                applyOffset(!(topbar && topbar.classList.contains("tb-hide")));
+            });
 
-  /* ------------------------------------------------------------------
-     入场动画调度
-     ------------------------------------------------------------------
-     ★ 为什么不用 beforeTransitionStart：
-       实测发现 Swiper 内部的「无动画重定位」也会 emit 它 ——
-       .home-swiper 的 top 带 450ms 过渡，topbar 显隐时该元素高度会逐帧
-       变化，Swiper 默认开启的 ResizeObserver 每帧触发一次 resize，
-       进而每帧调 slideTo/slideToClosest 并 emit beforeTransitionStart。
-       挂在它上面会导致「刚播出的入场动画被连续取消」，
-       内容闪一下就消失（footer 甚至永久不可见）。
+            /* ------------------------------------------------------------------
+               入场动画调度
+               ------------------------------------------------------------------
+               ★ 为什么不用 beforeTransitionStart：
+                 实测发现 Swiper 内部的「无动画重定位」也会 emit 它 ——
+                 .home-swiper 的 top 带 450ms 过渡，topbar 显隐时该元素高度会逐帧
+                 变化，Swiper 默认开启的 ResizeObserver 每帧触发一次 resize，
+                 进而每帧调 slideTo/slideToClosest 并 emit beforeTransitionStart。
+                 挂在它上面会导致「刚播出的入场动画被连续取消」，
+                 内容闪一下就消失（footer 甚至永久不可见）。
 
-     改用 slideChange —— activeIndex 真正变化时才触发，一次导航只来一次，
-     且时机最早（此时目标屏还在视口外滑入中，用户看不到重置这一帧）。
-     再用 lastEnterIdx 兜一层：不因任何重复信号重播。
-     ------------------------------------------------------------------ */
-  var lastEnterIdx = -1;     // 上一次「真正进入」的屏下标
-  var enterIdx = -1;         // 待播放入场的屏下标
-  var enterFallback = null;  // 兜底定时器：保证内容最终一定可见
+               改用 slideChange —— activeIndex 真正变化时才触发，一次导航只来一次，
+               且时机最早（此时目标屏还在视口外滑入中，用户看不到重置这一帧）。
+               再用 lastEnterIdx 兜一层：不因任何重复信号重播。
+               ------------------------------------------------------------------ */
+            var lastEnterIdx = -1;     // 上一次「真正进入」的屏下标
+            var enterIdx = -1;         // 待播放入场的屏下标
+            var enterFallback = null;  // 兜底定时器：保证内容最终一定可见
 
-  /* 播放某屏的入场弹入（含 about 屏三圆环的时序） */
-  function playEnter(s) {
-    if (!s) return;
-    var md = playSlide(s);
-    var key = s.dataset.slide || "";
-    // 三圆环只在首次进入 about 屏时播放
-    if (key === "about") {
-      setTimeout(function () { playAboutStats(s); }, (md + 0.9) * 1000);
-    }
-  }
+            /* 播放某屏的入场弹入（含 about 屏三圆环的时序） */
+            function playEnter(s) {
+                if (!s) return;
+                var md = playSlide(s);
+                var key = s.dataset.slide || "";
+                // 三圆环只在首次进入 about 屏时播放
+                if (key === "about") {
+                    setTimeout(function () {
+                        playAboutStats(s);
+                    }, (md + 0.9) * 1000);
+                }
+            }
 
-  var swiper = new Swiper(el, {
-    direction: "vertical",
-    slidesPerView: 1,
-    mousewheel: { sensitivity: 1, thresholdDelta: 30 },
-    keyboard: { enabled: true, onlyInViewport: true },
-    speed: 700,
-    pagination: { el: ".swiper-pagination", clickable: true },
-    a11y: { enabled: true },
-    /* ★ 必须关掉 ResizeObserver（Swiper 默认开启）。
-       见上方说明：它会把「topbar 显隐导致的容器高度变化」误判为窗口尺寸
-       变化，从而每帧做一次重定位 + 派发 beforeResize/resize，
-       是内容被反复重置的根源。
-       ★ 关掉后 Swiper 不再自己跟进容器高度，容器尺寸变化改由
-         applyOffset → syncSwiperSizeDuring() 显式对齐（见上方注释），
-         真实的窗口缩放仍由 Swiper 自身的 window resize 监听响应。 */
-    resizeObserver: false,
-    on: {
-      init: function () {
-        var s = this.slides[this.activeIndex];
-        var key = s ? (s.dataset.slide || "") : "";
-        // topbar 状态立刻同步（初始态本身就是展开的，这里只做兜底）
-        syncTopbar(key);
-        // 测量 & 卡片高度（此时 DOM 已就位）
-        measure();
-        calcFormCardHeight();
-        applyOffset(key === "banner" || key === "footer");
-        // 首屏：先把内容置为不可见态，再等一帧播放
-        resetSlide(s);
-        requestAnimationFrame(function () { playEnter(s); });
-        bindBanner(document.getElementById("homeBanner"));
-      },
-      /* 时机一：activeIndex 真正变化 → 把目标屏内容置为不可见。 */
-      slideChange: function () {
-        var sw = this;
-        var idx = sw.activeIndex;
-        if (idx === lastEnterIdx) return;   // 维护性重定位，不是真实导航
-        lastEnterIdx = idx;
-        var s = sw.slides[idx];
-        if (!s) return;
-        resetSlide(s);
-        enterIdx = idx;
-        // 兜底：万一 slideChangeTransitionEnd 没触发，也要保证内容最终可见
-        clearTimeout(enterFallback);
-        enterFallback = setTimeout(function () {
-          if (enterIdx === idx) { enterIdx = -1; playEnter(s); }
-        }, sw.params.speed + 700);
-      },
-      /* 时机二：滑入到位 → 播放弹入。 */
-      slideChangeTransitionEnd: function () {
-        var idx = this.activeIndex;
-        var s = this.slides[idx];
-        if (idx === enterIdx) {
-          enterIdx = -1;
-          clearTimeout(enterFallback);
-          playEnter(s);
-        }
-        syncTopbar(s ? (s.dataset.slide || "") : "");
-      },
-    },
-  });
+            var swiper = new Swiper(el, {
+                direction: "vertical",
+                slidesPerView: 1,
+                mousewheel: {sensitivity: 1, thresholdDelta: 30},
+                keyboard: {enabled: true, onlyInViewport: true},
+                speed: 700,
+                pagination: {el: ".swiper-pagination", clickable: true},
+                a11y: {enabled: true},
+                /* ★ 必须关掉 ResizeObserver（Swiper 默认开启）。
+                   见上方说明：它会把「topbar 显隐导致的容器高度变化」误判为窗口尺寸
+                   变化，从而每帧做一次重定位 + 派发 beforeResize/resize，
+                   是内容被反复重置的根源。
+                   ★ 关掉后 Swiper 不再自己跟进容器高度，容器尺寸变化改由
+                     applyOffset → syncSwiperSizeDuring() 显式对齐（见上方注释），
+                     真实的窗口缩放仍由 Swiper 自身的 window resize 监听响应。 */
+                resizeObserver: false,
+                on: {
+                    init: function () {
+                        var s = this.slides[this.activeIndex];
+                        var key = s ? (s.dataset.slide || "") : "";
+                        // topbar 状态立刻同步（初始态本身就是展开的，这里只做兜底）
+                        syncTopbar(key);
+                        // 测量 & 卡片高度（此时 DOM 已就位）
+                        measure();
+                        calcFormCardHeight();
+                        applyOffset(key === "banner" || key === "footer");
+                        // 首屏：先把内容置为不可见态，再等一帧播放
+                        resetSlide(s);
+                        requestAnimationFrame(function () {
+                            playEnter(s);
+                        });
+                        bindBanner(document.getElementById("homeBanner"));
+                    },
+                    /* 时机一：activeIndex 真正变化 → 把目标屏内容置为不可见。 */
+                    slideChange: function () {
+                        var sw = this;
+                        var idx = sw.activeIndex;
+                        if (idx === lastEnterIdx) return;   // 维护性重定位，不是真实导航
+                        lastEnterIdx = idx;
+                        var s = sw.slides[idx];
+                        if (!s) return;
+                        resetSlide(s);
+                        enterIdx = idx;
+                        // 兜底：万一 slideChangeTransitionEnd 没触发，也要保证内容最终可见
+                        clearTimeout(enterFallback);
+                        enterFallback = setTimeout(function () {
+                            if (enterIdx === idx) {
+                                enterIdx = -1;
+                                playEnter(s);
+                            }
+                        }, sw.params.speed + 700);
+                    },
+                    /* 时机二：滑入到位 → 播放弹入。 */
+                    slideChangeTransitionEnd: function () {
+                        var idx = this.activeIndex;
+                        var s = this.slides[idx];
+                        if (idx === enterIdx) {
+                            enterIdx = -1;
+                            clearTimeout(enterFallback);
+                            playEnter(s);
+                        }
+                        syncTopbar(s ? (s.dataset.slide || "") : "");
+                    },
+                },
+            });
 
-  // 暴露给其他脚本（如 .stat-num 数字动画可能依赖）
-  window.bqHomeSwiper = swiper;
-});
-</script>
-<script>
-/* 焦点大图 + 速览列表联动轮播（slide 4 内部） */
-(function () {
-  function setup() {
-    var area = document.getElementById("newsArea");
-    if (!area) return;
-    var feature = area.querySelector(".news-feature");
-    if (!feature) return;
-    var slides = feature.querySelectorAll(".nf-slide");
-    // 右侧「要闻速览」在 .news-side 里，与 .news-feature 同级：必须在 area 范围内查，
-    // 否则取到空集合，右侧高亮会一直停在模板渲染的第一条。
-    var rows = area.querySelectorAll(".ns-item");
-    var bar = feature.querySelector(".nf-progress-bar");
-    if (slides.length < 2) return;
-    var idx = 0, timer = null, DUR = 5200;
-    function set(i) {
-      idx = (i + slides.length) % slides.length;
-      slides.forEach(function (s, j) { s.classList.toggle("on", j === idx); });
-      rows.forEach(function (r) {
-        r.classList.toggle("on", parseInt(r.dataset.idx, 10) === idx);
-      });
-      if (bar) { bar.classList.remove("run"); void bar.offsetWidth; bar.classList.add("run"); }
-    }
-    function play() { stop(); timer = setInterval(function () { set(idx + 1); }, DUR); }
-    function stop() { if (timer) { clearInterval(timer); timer = null; } }
-    rows.forEach(function (r) {
-      r.addEventListener("mouseenter", function () { set(parseInt(r.dataset.idx, 10)); });
-    });
-    // 鼠标停在整个资讯区（含右侧列表）都暂停，避免正在看时被跳走
-    area.addEventListener("mouseenter", stop);
-    area.addEventListener("mouseleave", play);
-    set(0); play();
-  }
-  // 等首次进入 news 屏才启动轮播（节省 CPU）
-  setTimeout(setup, 500);
-})();
-</script>
+            // 暴露给其他脚本（如 .stat-num 数字动画可能依赖）
+            window.bqHomeSwiper = swiper;
+        });
+    </script>
+    <script>
+        /* 焦点大图 + 速览列表联动轮播（slide 4 内部） */
+        (function () {
+            function setup() {
+                var area = document.getElementById("newsArea");
+                if (!area) return;
+                var feature = area.querySelector(".news-feature");
+                if (!feature) return;
+                var slides = feature.querySelectorAll(".nf-slide");
+                // 右侧「要闻速览」在 .news-side 里，与 .news-feature 同级：必须在 area 范围内查，
+                // 否则取到空集合，右侧高亮会一直停在模板渲染的第一条。
+                var rows = area.querySelectorAll(".ns-item");
+                var bar = feature.querySelector(".nf-progress-bar");
+                if (slides.length < 2) return;
+                var idx = 0, timer = null, DUR = 5200;
+
+                function set(i) {
+                    idx = (i + slides.length) % slides.length;
+                    slides.forEach(function (s, j) {
+                        s.classList.toggle("on", j === idx);
+                    });
+                    rows.forEach(function (r) {
+                        r.classList.toggle("on", parseInt(r.dataset.idx, 10) === idx);
+                    });
+                    if (bar) {
+                        bar.classList.remove("run");
+                        void bar.offsetWidth;
+                        bar.classList.add("run");
+                    }
+                }
+
+                function play() {
+                    stop();
+                    timer = setInterval(function () {
+                        set(idx + 1);
+                    }, DUR);
+                }
+
+                function stop() {
+                    if (timer) {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                }
+
+                rows.forEach(function (r) {
+                    r.addEventListener("mouseenter", function () {
+                        set(parseInt(r.dataset.idx, 10));
+                    });
+                });
+                // 鼠标停在整个资讯区（含右侧列表）都暂停，避免正在看时被跳走
+                area.addEventListener("mouseenter", stop);
+                area.addEventListener("mouseleave", play);
+                set(0);
+                play();
+            }
+
+            // 等首次进入 news 屏才启动轮播（节省 CPU）
+            setTimeout(setup, 500);
+        })();
+    </script>
 {% endblock %}
