@@ -228,7 +228,11 @@ body { margin: 0; font-family: "Noto Sans SC", sans-serif; background: var(--ad-
   font-family: "Noto Sans SC", sans-serif;
 }
 .form-row .ql-editor { min-height: 180px; }
-.form-row .ql-editor img { max-width: 100%; }
+.form-row .ql-editor img { max-width: 100%; display: block; margin: .4rem auto; }
+/* 编辑器里插入的图默认居中（与前台 style.css 一致，所见即所得）；
+   用户按了左/右对齐按钮时以按钮为准 */
+.form-row .ql-editor .ql-align-left img { margin-left: 0; margin-right: auto; }
+.form-row .ql-editor .ql-align-right img { margin-left: auto; margin-right: 0; }
 .form-row .ql-editor.ql-blank::before {
   color: #adb5bd;
   font-style: normal;

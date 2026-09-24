@@ -146,11 +146,8 @@
 .pd-table th { width: 96px; color: var(--bq-red); font-weight: 700; white-space: nowrap; }
 .pd-table tr:last-child th, .pd-table tr:last-child td { border-bottom: none; }
 .pd-edit-zone h3 { margin-top: 1.2rem; }
-.rich-content { line-height: 1.9; color: #4a5852; font-size: 1rem; text-align: justify; }
-.rich-content img { max-width: 100%; height: auto; border-radius: 8px; margin: .5rem 0; }
-.rich-content h1, .rich-content h2, .rich-content h3, .rich-content h4 { color: var(--bq-red); margin-top: 1rem; }
-.rich-content p { margin-bottom: .8rem; }
-.rich-content ul, .rich-content ol { padding-left: 1.4rem; margin-bottom: .8rem; }
+/* .rich-content 的样式已提升到全局 style.css（产品介绍/文章正文/栏目段落三处共用），
+   这里不再重复定义，避免两处规则分叉。 */
 .hot-list.ranked .hot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 移动端：产品参数表保持两列不溢出；正文与表格字号不低于 1rem */

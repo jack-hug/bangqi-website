@@ -290,6 +290,32 @@ a:hover { color: var(--bq-gold); }
 .content-card h3::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--bq-gold); transform: rotate(45deg); }
 .content-card p { color: #4a5852; line-height: 1.95; font-size: .94rem; margin-bottom: .6rem; }
 
+/* ---------- 富文本正文（产品介绍 / 文章正文 / 栏目段落 三处共用） ----------
+   三处内容都由 richtext.py 规范化后经 |richtext 渲染。样式必须放在全局：
+   早期只有 product_detail.html 的页内 <style> 写了 .rich-content，而
+   news_detail.html / category_page.html 只套了类名没定义样式，导致
+   「邦资讯」正文里上传的图完全不受约束，按原始像素渲染把卡片撑破。 */
+.rich-content { line-height: 1.9; color: #4a5852; font-size: 1rem; text-align: justify; }
+.rich-content p { margin-bottom: .8rem; }
+.rich-content h1, .rich-content h2, .rich-content h3, .rich-content h4 { color: var(--bq-red); margin-top: 1rem; }
+.rich-content ul, .rich-content ol { padding-left: 1.4rem; margin-bottom: .8rem; }
+.rich-content > :last-child { margin-bottom: 0; }
+
+/* 正文插图：响应式（不超出容器、小图不放大）+ 默认居中。
+   居中同时覆盖历史数据里已经插入的图片，无需重新保存文章。 */
+.rich-content img {
+  display: block; max-width: 100%; height: auto;
+  margin: .6rem auto; border-radius: 8px;
+}
+/* 后台编辑器里显式设过对齐时，以对齐按钮为准（左 / 右） */
+.rich-content .ql-align-left img { margin-left: 0; margin-right: auto; }
+.rich-content .ql-align-right img { margin-left: auto; margin-right: 0; }
+
+/* 正文表格：不超出容器，长内容换行而不是撑破卡片 */
+.rich-content table { width: 100%; max-width: 100%; border-collapse: collapse; margin: .6rem 0; }
+.rich-content th, .rich-content td { border: 1px solid var(--bq-line); padding: .5rem .7rem; font-size: .92rem; vertical-align: top; word-break: break-word; }
+.rich-content th { background: var(--bq-bg); color: var(--bq-ink); font-weight: 700; }
+
 /* 新闻/文章列表行 */
 .article-row { display: block; padding: 1.25rem 0; border-bottom: 1px solid var(--bq-line); }
 .article-row:hover .ar-title { color: var(--bq-red); }

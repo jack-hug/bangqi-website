@@ -49,6 +49,8 @@ def _drop_js_attr(match):
 
 # 形如 <p> </p> / <b>x</b> 的标签
 _TAG_RE = re.compile(r"<[a-zA-Z/!][^>]*>")
+# <img ...>（含自闭合写法），用于补加载属性
+_IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.I)
 # 空段落：<p></p> / <p> </p> / <p><br></p> / <p>&nbsp;</p>
 _EMPTY_P_RE = re.compile(r"<p>(?:[ \t\u00a0]|&nbsp;|<br\s*/?>)*</p>", re.I)
 # 标签之间仅含换行与缩进的空白（Quill 输出美化时会出现），先折掉再判断空段
@@ -83,8 +85,31 @@ def sanitize_html(html):
     return s
 
 
+def ensure_img_attrs(html):
+    """给正文 <img> 补 loading="lazy" decoding="async"（缺失才补，幂等）。
+
+    正文插图都在首屏以下，懒加载能明显减少首屏流量；已有该属性（比如用户
+    手写过 loading="eager"）则原样保留，不覆盖。
+    """
+    def _fix(m):
+        tag = m.group(0)
+        add = []
+        if not re.search(r"\bloading\s*=", tag, re.I):
+            add.append('loading="lazy"')
+        if not re.search(r"\bdecoding\s*=", tag, re.I):
+            add.append('decoding="async"')
+        if not add:
+            return tag
+        body = tag[1:-1].strip()
+        if body.endswith("/"):
+            body = body[:-1].rstrip()
+        return "<%s %s>" % (body, " ".join(add))
+
+    return _IMG_TAG_RE.sub(_fix, html)
+
+
 def clean_html(html):
-    """清理：危险标签 → 空段落（<p></p> 去掉、连续压成一个、首尾删除）"""
+    """清理：危险标签 → 空段落（<p></p> 去掉、连续压成一个、首尾删除）→ 图片属性"""
     s = sanitize_html(html).strip()
     if not s:
         return ""
@@ -94,7 +119,7 @@ def clean_html(html):
     s = re.sub(r"(?:<p><br\s*/?></p>)+", "<p><br></p>", s)
     s = re.sub(r"^(?:<p><br\s*/?></p>)+", "", s)
     s = re.sub(r"(?:<p><br\s*/?></p>)+$", "", s)
-    return s.strip()
+    return ensure_img_attrs(s.strip())
 
 
 def to_html(raw):
