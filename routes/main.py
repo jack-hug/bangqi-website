@@ -63,6 +63,41 @@ def _qs(request, drop=None, extra=None):
     return ("?" + "&".join(f"{k}={v}" for k, v in args.items())) if args else ""
 
 
+def page_range(page, pages, span=1, edge=1):
+    """生成分页要显示的页码序列，用 None 代表省略号。
+
+    为什么要窗口化（v1.4.3）：原先模板是 `range(1, pages + 1)` 把所有页码全渲染，
+    产品 132 条 = 11 页时就是 13 个圆角方块（页码 + 上一页/下一页），
+    每块移动端撑到 44px 触控尺寸，合计 449px，而 320px 屏的容器只有 296px
+    → 横向溢出 153px，首尾各有一半页码被推出屏外看不见、也点不到。
+    这里只保留「首尾各 edge 页 + 当前页 ± span 页」，中间断开处插省略号，
+    项数就从 O(pages) 变成常量：span=1/edge=1 时最多 7 个页码（+2 个按钮 = 9 项），
+    与总页数无关（50 页、200 页都一样）。
+
+    例：pages=11, page=4 → [1, None, 3, 4, 5, None, 11]
+        pages=11, page=1 → [1, 2, None, 11]（首页不显示左侧省略号）
+    """
+    if pages <= 1:
+        return []
+    # 需要完整显示的页码集合：首尾各 edge 页 + 当前页附近 span 页
+    keep = set()
+    for i in range(1, min(edge, pages) + 1):
+        keep.add(i)
+    for i in range(max(1, pages - edge + 1), pages + 1):
+        keep.add(i)
+    for i in range(max(1, page - span), min(pages, page + span) + 1):
+        keep.add(i)
+
+    out = []
+    prev = 0
+    for i in sorted(keep):
+        if prev and i - prev > 1:
+            out.append(None)      # 断档 → 省略号
+        out.append(i)
+        prev = i
+    return out
+
+
 # ============================================================
 # 上下文处理器
 # ============================================================
@@ -79,6 +114,7 @@ def inject_globals():
         "qs_except": lambda key: _qs(request, drop=key),
         "qs_append": lambda key, val: _qs(request, extra={key: val}),
         "qs_page": _qs(request),
+        "page_range": page_range,   # 分页页码窗口化（v1.4.3，见函数注释）
     }
 
 

@@ -31,7 +31,7 @@ const RESOURCES = {
        hint: "首屏是全屏铺满，图片会等比放大后裁掉少量边缘：最多上下各 85px、左右各 45px。文字、LOGO 等关键内容请放在画面中部，上下各留 90px、左右各留 50px 余量。"},
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
       {k: "sort_order", l: "排序", t: "number", def: 0},
-      {k: "is_active", l: "启用", t: "checkbox", def: true},
+      {k: "is_active", l: "状态", t: "toggle", def: true},
     ],
     cols: ["image", "kicker", "title", "color", "sort_order", "is_active"],
     search: ["kicker", "title", "subtitle"],
@@ -54,7 +54,7 @@ const RESOURCES = {
        hint: "展示区高度固定 460px、宽度随屏幕在 444~624px 之间变化，图片按高度铺满后会裁掉两侧：宽屏几乎不裁，1366 宽笔记本单侧约 60px。主体请放在画面中间，左右各留 140px 余量可保证各桌面尺寸都完整。"},
       {k: "color", l: "占位图颜色", t: "select", opts: COLORS},
       {k: "sort_order", l: "排序", t: "number", def: 0},
-      {k: "is_active", l: "启用", t: "checkbox", def: true},
+      {k: "is_active", l: "状态", t: "toggle", def: true},
     ],
     cols: ["image", "title", "color", "sort_order", "is_active"],
   },
@@ -241,6 +241,53 @@ async function loadFkData() {
   for (const key of ["dosage-form", "trademark", "func-category", "manufacturer", "news-category", "product"]) {
     state.fkCache[key] = await api("GET", `/api/${key}`);
   }
+}
+
+/* ---- 外键选项缓存失效（v1.4.3）----
+   问题：剂型 / 商标 / 功能分类 / 生产企业 / 新闻分类 / 产品 这些下拉的选项
+   全部来自 state.fkCache，而它此前只在「登录成功」和「整页加载」时由
+   loadFkData() 写入一次。于是「剂型管理」里新增一个剂型后，切到「产品管理」
+   点新增，下拉里看不到新剂型 —— 必须 F5 才出现（删除同理，会残留已删项）。
+
+   修法：某资源保存/删除后，直接把它对应的 fkCache 键重取一次。
+   ★ 这里必须按「资源 → 它对应的缓存键」刷新，不能按「当前页面在用什么」判断：
+     保存剂型时当前页是「剂型管理」，它自己并不用任何下拉，
+     若按当前页判断就会跳过刷新，等到切到产品页时缓存已经陈旧了。
+
+   注意不要无脑 loadFkData()：一次发 6 个请求，还会顺带重取与本次改动无关的数据；
+   这里只重取真正变了的那个键。 */
+const FK_DEPENDENTS = ["dosage-form", "trademark", "func-category",
+                       "manufacturer", "news-category", "product"];
+
+async function refreshFkCache(resourceKey, { silent = true } = {}) {
+  if (!FK_DEPENDENTS.includes(resourceKey)) return;
+  try {
+    state.fkCache[resourceKey] = await api("GET", `/api/${resourceKey}`);
+
+    // 产品图片页的筛选器、以及列表里的产品名映射都靠 renderCrudTable 重建
+    if (resourceKey === "product" && state.currentView === "product-image") {
+      renderCrudTable(state.currentView);
+    }
+    // 编辑弹窗正开着时，把已渲染的下拉选项清掉，下次聚焦按新缓存重画
+    const modal = document.getElementById("editModal");
+    if (modal && modal.classList.contains("show") && resourceKey !== state.currentView) {
+      renderFkSelects();
+    }
+  } catch (e) {
+    if (!silent) showToast("选项刷新失败: " + e.message, true);
+  }
+}
+
+/* 表单里已经渲染出来的 fk 控件，按最新 fkCache 重新画下拉内容。
+   这里只丢掉下拉层里缓存的旧选项（.fk-dropdown 的内容由 fkFilter 在聚焦时生成），
+   不动输入框里已填的文字与隐藏的 id，避免把用户正在填的表单冲掉。 */
+function renderFkSelects() {
+  const body = document.getElementById("modalBody");
+  if (!body) return;
+  body.querySelectorAll(".fk-select").forEach(wrap => {
+    const dd = wrap.querySelector(".fk-dropdown");
+    if (dd) dd.innerHTML = "";
+  });
 }
 
 // ============================================================
@@ -797,7 +844,7 @@ function colLabel(res, col) {
   return labels[col] || col;
 }
 
-function renderCell(col, val, item, res) {
+function renderCell(col, val, item, res, resourceKey) {
   // 详情页预览链接：产品列表的「名称」、文章列表的「标题」
   if (res && res.detailUrl && col === res.detailCol) {
     const text = String(val === null || val === undefined ? "" : val).replace(/<br>/g, " ").trim();
@@ -806,7 +853,15 @@ function renderCell(col, val, item, res) {
     return `<a class="td-link" href="${res.detailUrl}${item.id}" target="_blank" rel="noopener"`
       + ` title="在新窗口打开前台页面预览">${escapeHtml(inner)}<span class="td-link-ico">↗</span></a>`;
   }
-  if (col === "is_active") return val ? `<span class="td-tag" style="background:#e8f3ef;color:#67c23a">启用</span>` : `<span class="td-tag" style="background:#fef0f0;color:#f56c6c">停用</span>`;
+  // v1.4.3：状态列做成可直接点的徽章 —— 点一下切换启用/停用，不必进编辑弹窗。
+  if (col === "is_active") {
+    const on = !!val;
+    return `<button type="button" class="td-tag td-status"
+              style="background:${on ? "#e8f3ef" : "#fef0f0"};color:${on ? "#67c23a" : "#f56c6c"}"
+              title="点击切换为${on ? "停用" : "启用"}"
+              onclick="quickToggleStatus('${resourceKey || ""}', ${item.id}, this)"
+              >${on ? "启用" : "停用"}</button>`;
+  }
   if (col === "image") {
     if (!val) return `<span class="text-muted" style="font-size:.78rem">未上传 · 占位图</span>`;
     return `<img class="td-thumb" src="${escapeHtml(val)}" loading="lazy" onerror="this.replaceWith('图片缺失')">`;
@@ -922,6 +977,18 @@ function buildForm(res, data) {
       html += `<input type="date" class="form-control" name="${f.k}" value="${val}"${req}>`;
     } else if (f.t === "checkbox") {
       html += `<div class="form-check"><input type="checkbox" class="form-check-input" name="${f.k}" ${val ? "checked" : ""}><label class="form-check-label">${f.l}</label></div>`;
+    } else if (f.t === "toggle") {
+      // v1.4.3：状态类字段改为「单按钮切换」——点一下启用、再点一下停用。
+      // 用 checkbox 承载真实值（沿用 collectFormData 的 el.checked 分支），
+      // 但视觉上藏起原生勾选框，由 .status-toggle 这个按钮表现状态。
+      html += `<div class="status-toggle ${val ? "on" : "off"}" role="button" tabindex="0"
+                    aria-pressed="${val ? "true" : "false"}"
+                    onclick="toggleStatus(this)" onkeydown="statusToggleKey(event, this)">
+        <input type="checkbox" class="status-toggle-input" name="${f.k}" ${val ? "checked" : ""}>
+        <span class="status-dot" aria-hidden="true"></span>
+        <span class="status-text">${val ? "启用" : "停用"}</span>
+        <span class="status-hint">点击切换</span>
+      </div>`;
     } else if (f.t === "select") {
       html += `<select class="form-select" name="${f.k}">`;
       for (const o of f.opts) {
@@ -1337,7 +1404,7 @@ function paintCrudRows(resourceKey) {
   for (const item of pageItems) {
     rowIdx++;
     html += `<tr data-search="${escapeHtml(rowSearchText(item))}">`;
-    for (const col of res.cols) html += `<td>${renderCell(col, item[col], item, res)}</td>`;
+    for (const col of res.cols) html += `<td>${renderCell(col, item[col], item, res, resourceKey)}</td>`;
     html += `<td class="td-actions">`;
     if (res.sortable) {
       html += `<button class="btn-move" title="上移一位"`
@@ -1424,6 +1491,60 @@ function renderPlainPreview(content, max) {
   return escapeHtml(text.substring(0, max)) + (text.length > max ? "..." : "");
 }
 
+/* ---- 状态切换按钮（v1.4.3）----
+   一个按钮表达两种状态：点一下启用、再点一下停用。
+   真实值仍放在内部隐藏的 checkbox 上，collectFormData() 照旧读 el.checked，
+   因此保存链路完全不用改。 */
+function toggleStatus(el) {
+  const input = el.querySelector(".status-toggle-input");
+  if (!input) return;
+  input.checked = !input.checked;
+  syncStatusToggle(el);
+}
+
+// 键盘可访问：空格 / 回车等同于点击
+function statusToggleKey(ev, el) {
+  if (ev.key === " " || ev.key === "Enter" || ev.key === "Spacebar") {
+    ev.preventDefault();
+    toggleStatus(el);
+  }
+}
+
+function syncStatusToggle(el) {
+  const input = el.querySelector(".status-toggle-input");
+  const on = !!(input && input.checked);
+  el.classList.toggle("on", on);
+  el.classList.toggle("off", !on);
+  el.setAttribute("aria-pressed", on ? "true" : "false");
+  const txt = el.querySelector(".status-text");
+  if (txt) txt.textContent = on ? "启用" : "停用";
+}
+
+/* 列表里直接点状态徽章切换启用/停用（v1.4.3）。
+   走完整的 PUT 接口（只发 is_active 一个字段），
+   成功后只改这一个徽章 + 本地列表值，不整表重绘，避免打断用户浏览位置。 */
+async function quickToggleStatus(resourceKey, id, btn) {
+  const res = RESOURCES[resourceKey];
+  if (!res) return;
+  const st = state.crud[resourceKey];
+  const item = st && st.list ? st.list.find(x => String(x.id) === String(id)) : null;
+  const next = !(item ? item.is_active : btn.textContent.trim() === "停用");
+  btn.disabled = true;
+  try {
+    await api("PUT", `${res.endpoint}/${id}`, { is_active: next });
+    if (item) item.is_active = next;
+    btn.textContent = next ? "启用" : "停用";
+    btn.style.background = next ? "#e8f3ef" : "#fef0f0";
+    btn.style.color = next ? "#67c23a" : "#f56c6c";
+    btn.title = `点击切换为${next ? "停用" : "启用"}`;
+    showToast(next ? "已启用" : "已停用");
+  } catch (e) {
+    showToast("切换失败: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 function collectFormData(res) {
   const data = {};
   for (const f of res.fields) {
@@ -1434,7 +1555,7 @@ function collectFormData(res) {
     }
     const el = document.querySelector(`#modalBody [name="${f.k}"]`);
     if (!el) continue;
-    if (f.t === "checkbox") {
+    if (f.t === "checkbox" || f.t === "toggle") {
       data[f.k] = el.checked;
     } else if (f.t === "number") {
       data[f.k] = el.value ? parseInt(el.value) : 0;
@@ -1457,6 +1578,10 @@ async function saveItem(resourceKey) {
       showToast("新增成功");
     }
     editModal.hide();
+    // v1.4.3：剂型/商标等被别的模块当做下拉选项的资源，改动后要让缓存失效，
+    // 否则切到「产品管理」新增时看不到刚加的项（得 F5）。必须在 renderCrudTable 前刷新，
+    // 因为产品列表的产品名列也依赖 product 缓存。
+    await refreshFkCache(resourceKey);
     renderCrudTable(resourceKey);
   } catch (e) {
     showToast("保存失败: " + e.message, true);
@@ -1475,6 +1600,9 @@ async function doDelete() {
     await api("DELETE", `${res.endpoint}/${state.deletingId}`);
     showToast("删除成功");
     deleteModal.hide();
+    // v1.4.3：删除同样要让外键缓存失效 —— 否则删掉某个剂型后，
+    // 产品表单的下拉里还留着这个已不存在的选项（会选出悬空外键）。
+    await refreshFkCache(state.deletingResource);
     if (state._afterDelete) {
       const fn = state._afterDelete;
       state._afterDelete = null;

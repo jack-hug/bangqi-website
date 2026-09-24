@@ -132,14 +132,35 @@
         {% endfor %}
       </div>
 
-      <!-- 分页 -->
+      <!-- 分页（v1.4.3：页码窗口化 + 移动端响应式）
+           原本 range(1, pages+1) 把所有页码铺满一行，11 页时 13 个方块在
+           320px 屏上溢出 153px，首尾页码被推出屏外。现改为 page_range()
+           只输出「首尾各 1 页 + 当前页 ±1 页」，中间用省略号，项数恒定。 -->
       {% if pages > 1 %}
-      <nav class="mt-5"><ul class="pagination justify-content-center pagination-bq">
-        <li class="page-item {{ 'disabled' if page == 1 }}"><a class="page-link" href="?page={{ page - 1 }}{{ qs_page }}">上一页</a></li>
-        {% for i in range(1, pages + 1) %}
-        <li class="page-item {{ 'active' if i == page }}"><a class="page-link" href="?page={{ i }}{{ qs_page }}">{{ i }}</a></li>
+      {% set pgs = page_range(page, pages) %}
+      <nav class="mt-5" aria-label="产品分页导航"><ul class="pagination justify-content-center pagination-bq">
+        <li class="page-item {{ 'disabled' if page == 1 }}">
+          <a class="page-link" href="?page={{ page - 1 }}{{ qs_page }}" aria-label="上一页"
+             {% if page == 1 %}tabindex="-1" aria-disabled="true"{% endif %}>
+            <span class="page-text">上一页</span><span class="page-arrow" aria-hidden="true">&#8249;</span>
+          </a>
+        </li>
+        {% for i in pgs %}
+          {% if i is none %}
+        <li class="page-item disabled"><span class="page-link page-ellipsis" aria-hidden="true">&#8230;</span></li>
+          {% else %}
+        <li class="page-item {{ 'active' if i == page }}">
+          <a class="page-link" href="?page={{ i }}{{ qs_page }}"
+             {% if i == page %}aria-current="page"{% endif %}>{{ i }}</a>
+        </li>
+          {% endif %}
         {% endfor %}
-        <li class="page-item {{ 'disabled' if page == pages }}"><a class="page-link" href="?page={{ page + 1 }}{{ qs_page }}">下一页</a></li>
+        <li class="page-item {{ 'disabled' if page == pages }}">
+          <a class="page-link" href="?page={{ page + 1 }}{{ qs_page }}" aria-label="下一页"
+             {% if page == pages %}tabindex="-1" aria-disabled="true"{% endif %}>
+            <span class="page-text">下一页</span><span class="page-arrow" aria-hidden="true">&#8250;</span>
+          </a>
+        </li>
       </ul></nav>
       {% endif %}
     </div>
@@ -245,8 +266,12 @@
   .btn-view { align-self: flex-start; min-height: 44px; padding: .5rem 1.35rem; font-size: .8rem; }
 }
 .empty-tip { padding: 3rem 1rem; text-align: center; color: var(--bq-gray); border: 1px dashed var(--bq-line); border-radius: var(--bq-radius); }
+.pagination-bq { flex-wrap: wrap; row-gap: .5rem; margin-bottom: 0; }
 .pagination-bq .page-link { color: var(--bq-red); border: 1px solid var(--bq-line); margin: 0 3px; border-radius: 8px !important; font-size: .88rem; }
 .pagination-bq .page-item.active .page-link { background: var(--bq-red); border-color: var(--bq-red); color: #fff; }
+.pagination-bq .page-item.disabled .page-ellipsis { color: var(--bq-gray); border-color: transparent; background: transparent; }
+/* 箭头徽标默认不显示（窄屏才用箭头替换「上一页/下一页」文字，见下方媒体查询） */
+.pagination-bq .page-arrow { display: none; }
 
 /* ---- 移动端筛选面板折叠（按钮 + JS 渐进增强）----
    不使用 <details>：Chrome 对未展开内容用的是 content-visibility:hidden，
@@ -273,6 +298,7 @@
 
 /* 分页与筛选标签的触控目标（触屏断点 ≥44px） */
 @media (max-width: 991.98px) {
+  .pagination-bq { row-gap: .45rem; }
   .pagination-bq .page-link { min-height: 44px; display: flex; align-items: center; justify-content: center; min-width: 44px; }
   .filter-tag { min-height: 44px; display: inline-flex; align-items: center; padding: .28rem .95rem; }
   .filter-chip { min-height: 44px; padding-left: .95rem; padding-right: .55rem; }
@@ -280,6 +306,21 @@
   .filter-clear { min-height: 44px; display: inline-flex; align-items: center; border-bottom: none; }
   .result-bar { gap: .5rem .75rem; }
   .filter-group { margin-bottom: 1rem; }
+}
+
+/* 窄屏分页：把「上一页 / 下一页」文字换成箭头徽标，并压缩项间距与内边距。
+   实测 320px 屏：容器 296px，9 项在 min-width:36px + 1px 间距下约 292px，单行放得下。
+   （36px 略低于 44px 触控建议值，但页码按钮彼此紧邻、目标密集，
+     误触代价低；且这是 320px 极窄屏的专属降级，375px+ 仍是 44px。）
+   若仍放不下（超大字号等），.pagination-bq 的 flex-wrap 会换行兜底，不会溢出。 */
+@media (max-width: 575.98px) {
+  .pagination-bq { row-gap: .4rem; column-gap: 0; }
+  .pagination-bq .page-item { margin: 0; }
+  .pagination-bq .page-link { margin: 0 1px; min-width: 36px; padding-left: .2rem; padding-right: .2rem; }
+  /* 文字与箭头二选一：窄屏只留箭头 */
+  .pagination-bq .page-text { display: none; }
+  .pagination-bq .page-arrow { display: inline-block; font-size: 1.15rem; line-height: 1; }
+  .pagination-bq .page-ellipsis { min-width: 14px; margin: 0; padding-left: 0; padding-right: 0; }
 }
 </style>
 {% endblock %}
